@@ -1,9 +1,19 @@
+# Core
 Django==5.2.7
-django-cors-headers==4.9.0
 djangorestframework==3.16.1
-# djangorestframework_simplejwt==5.5.1
-pillow==12.0.0
+djangorestframework_simplejwt==5.5.1
+django-cors-headers==4.9.0
+python-dotenv==1.0.0
+django-environ==0.12.0
+
+# Database / environment
 psycopg==3.2.12
 psycopg-binary==3.2.12
-# pycparser==2.23
-django-environ==0.12.0
+
+# Media / image handling
+pillow==12.0.0
+
+# Real-time chat
+channels==4.3.2
+channels-redis==4.3.0
+redis==7.1.0
