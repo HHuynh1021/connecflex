@@ -1,10 +1,10 @@
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser, IsAuthenticatedOrReadOnly
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from .models import Shop, Category, Product
+from .models import Shop, Product
 from django.db.models import Q
 
-from .serializers import ShopSerializer, ProductSerializer, CategorySerializer
+from .serializers import ShopSerializer, ProductSerializer
 
 # Create your views here.
 class ShopListAndCreateView(generics.ListCreateAPIView):
@@ -28,9 +28,3 @@ class ProductEditorView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [JWTAuthentication]
     serializer_class = ProductSerializer
-
-class CategoryListAndCreateView(generics.ListCreateAPIView):
-    queryset = Category.objects.all()
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication]
-    serializer_class = CategorySerializer

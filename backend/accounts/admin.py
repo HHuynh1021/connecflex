@@ -3,7 +3,7 @@ from django.contrib.admin import AdminSite
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin, GroupAdmin
 from django.contrib.auth.models import Group
 from rest_framework.authtoken.models import Token
-from .models import User
+from .models import User, Member
 from django.utils.translation import gettext_lazy as _
 
 
@@ -54,3 +54,4 @@ class UserAdmin(BaseUserAdmin):
 admin.site.register(User, UserAdmin)
 admin.site.register(Group, GroupAdmin)
 admin.site.register(Token)
+admin.site.register(Member)

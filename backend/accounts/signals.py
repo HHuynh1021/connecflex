@@ -15,7 +15,7 @@ def create_shop_account(sender, instance, created, **kwargs):
             phone='',         # optional default
             logo=None,        # optional default
         )
-    else:
+    elif not instance.is_superuser:
         try:
             shop = instance.shop_account  # reverse OneToOne
             shop.name = instance.name

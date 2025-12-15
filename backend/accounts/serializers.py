@@ -16,3 +16,7 @@ class MemberUserSerializer(serializers.ModelSerializer):
         model = Member
         fields = '__all__'
         read_only_fields = ('id',)
+    def validate_role(self, value):
+        if value not in Member.ROLE_CHOICES:
+            raise serializers.ValidationError('Invalid role')
+        return value.lower()

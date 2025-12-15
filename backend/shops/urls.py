@@ -8,5 +8,4 @@ urlpatterns = [
     path('shops/shop-editor/<str:pk>/', views.ShopEditorView.as_view(), name='shop-editor'),
     path('shops/product-list-create/', views.ProductListAndCreateView.as_view(), name='product-list'),
     path('shops/product-editor/<str:pk>/', views.ProductEditorView.as_view(), name='product-list'),
-    path('shops/category-list/', views.CategoryListAndCreateView.as_view(), name='category-list'),
 ]
