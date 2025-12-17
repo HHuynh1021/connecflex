@@ -2,6 +2,7 @@ from pathlib import Path
 import os
 from datetime import timedelta
 import environ #type:ignore
+import certifi  # type: ignore
 
 env = environ.Env()
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -10,13 +11,21 @@ environ.Env.read_env(BASE_DIR / ".env")
 SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# For local development, keep DEBUG=True. Set to False in production.
+# Use a boolean env, not a raw string, so "False" is treated as False.
+DEBUG = env.bool("DEBUG", default=True)
 
-# ALLOWED_HOSTS = ['*']
+# Hosts allowed to serve the app. Use env overrides for deploy.
+ALLOWED_HOSTS = env.list(
+    "ALLOWED_HOSTS",
+    default=["localhost", "127.0.0.1", "0.0.0.0"],
+)
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-]
+# Frontend origins allowed to call the API. Override in env for prod.
+CORS_ALLOWED_ORIGINS = env.list(
+    "CORS_ALLOWED_ORIGINS",
+    default=["http://localhost:5173"],
+)
 
 
 # Application definition
@@ -43,9 +52,9 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',  # must be first for CORS headers
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -95,13 +104,18 @@ DATABASES = {
         'PORT': env("PORT_DB"),
     }
 }
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = env("EMAIL_HOST")
-EMAIL_USE_TLS = True
-EMAIL_PORT = env("EMAIL_PORT")
-EMAIL_HOST_USER = env("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
-DEFAULT_FROM_EMAIL = "no_reply@connectflex.com"
+if DEBUG:
+    # During local dev, print emails to console to avoid SMTP/SSL issues.
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_HOST = "smtp.gmail.com"
+    EMAIL_PORT = 587
+    EMAIL_USE_TLS = True
+    EMAIL_HOST_USER = "hiephuynh81@gmail.com"      # your Gmail
+    EMAIL_HOST_PASSWORD = "eciy grkp srvu nmuo"  # Gmail App Password
+
+DEFAULT_FROM_EMAIL = env("EMAIL_HOST_USER")
 DOMAIN = env("DOMAIN")
 SITE_NAME = "connecflex"
 

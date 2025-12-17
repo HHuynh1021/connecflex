@@ -12,6 +12,8 @@ class ShopListAndCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [JWTAuthentication]
     serializer_class = ShopSerializer
+    def get_queryset(self):
+        return Shop.objects.filter(shop_account=self.request.user)
 class ShopEditorView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Shop.objects.all()
     permission_classes = [IsAuthenticated]

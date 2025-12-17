@@ -6,7 +6,7 @@ from core.utils import custom_id
 
 # Create your models here.
 def default_account_id():
-    return custom_id(prefix="accounts")
+    return custom_id().lower()
 class User(AbstractBaseUser, PermissionsMixin):
     id = models.CharField(
         primary_key=True,
@@ -19,6 +19,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(_("Email address"), unique=True)
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['name']
@@ -51,6 +53,8 @@ class Member(models.Model):
     email = models.EmailField(_("Email address"), unique=True)
     shop = models.ForeignKey('shops.Shop', on_delete=models.CASCADE, related_name='members')
     role = models.CharField(max_length=100, choices=ROLE_CHOICES, default=STAFF)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['first_name', 'last_name']
     class Meta:

@@ -1,10 +1,20 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import './index.css'
 import App from './App.tsx'
+import { Provider_css } from './components/ui/provider.tsx'
+import { Provider } from 'react-redux'
+import { store, persistor } from './services/store.tsx'
+import { PersistGate } from 'redux-persist/integration/react'
+import { Center, Spinner } from '@chakra-ui/react'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <Provider store={store}>
+      <PersistGate persistor={persistor}>
+        <Provider_css>
+          <App />
+        </Provider_css>
+      </PersistGate>
+    </Provider>
   </StrictMode>,
 )
