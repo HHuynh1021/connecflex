@@ -9,10 +9,12 @@ import Register from "./auths/Register"
 import ResetPassword from "./auths/ResetPassword"
 import Activate from "./auths/Activate"
 import ResetPasswordConfirm from "./auths/ResetPasswordConfirm"
-import ShopList from "./publicPages/ShopList"
+import ShopListPage from "./publicPages/ShopListPage"
 import AddProducts from "./adminPages/AddProducts"
 import ProductPage from "./publicPages/ProductPage"
 import ShopProducts from "./adminPages/ShopProducts"
+import ProductListPage from "./publicPages/ProductListPage"
+import HomePage from "./publicPages/HomePage"
 
 function App() {
 
@@ -21,8 +23,10 @@ function App() {
       <Routes>
         {/* public page paths */}
         <Route path="/" element={<Dashboard/>}>
-          <Route index element={<ShopList/>}/>
-          <Route path="/home" element={<ShopList/>}/>
+          <Route index element={<HomePage/>}/>
+          <Route path="/home" element={<HomePage/>}/>
+          <Route path="/home/shop-list" element={<ShopListPage/>}/>
+          <Route path="/home/product-list/" element={<ProductListPage/>}/>
         </Route>
         <Route path="/shop-page/:shopId/templates" element={<ShopPage/>}/>
         <Route path="/product-page/:shopId/:productId" element={<ProductPage/>}/>

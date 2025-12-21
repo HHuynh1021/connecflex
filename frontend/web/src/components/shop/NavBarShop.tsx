@@ -13,7 +13,7 @@ const NavBarShop: React.FC<NavBarShopProps> = ({logo, name}) => {
   
   return (
     <Box>
-        <HStack w={"100%"} justifyContent={"space-between"} fontSize={"18px"} fontWeight={"bold"} p={"10px"}>
+        <HStack w={"100%"} justifyContent={"space-between"} fontSize={{base: "14px", md: "18px"}} fontWeight={"bold"} p={"10px"}>
             <HStack gap={"10px"}>
               <Avatar.Root size={"2xl"}>
                 <Avatar.Image src={logo}/>

@@ -86,6 +86,7 @@ class ProductImageSerializer(serializers.ModelSerializer):
 
 class ProductSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, read_only=True)
+    shop_name = serializers.SerializerMethodField()
     
     class Meta:
         model = Product
@@ -93,6 +94,7 @@ class ProductSerializer(serializers.ModelSerializer):
             'id',
             'name',
             'shop_id',
+            'shop_name',
             'description',
             'price',
             'category',
@@ -101,3 +103,5 @@ class ProductSerializer(serializers.ModelSerializer):
             'updated_at'
         ]
         read_only_fields = ('id',)
+    def get_shop_name(self, obj):
+        return obj.shop_id.name

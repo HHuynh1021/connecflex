@@ -215,10 +215,10 @@ const Templates: React.FC = () => {
                   height="200px" 
                   fit={"fill"} // Fixed: changed from fit to objectFit
                   w={{ base: "100%", md: "70%" }}
-                  shadow="3px 3px 15px 5px rgb(75, 75, 79)"
+                  
                 />
                 <Stack 
-                  shadow="3px 3px 15px 5px rgb(75, 75, 79)" 
+                  
                   p="10px" 
                   rounded="5px" 
                   w={{ base: "100%", md: "fit-content" }}
@@ -258,11 +258,12 @@ const Templates: React.FC = () => {
                 </Stack>
               </HStack>
               
-              {/* Product Grid */}
-              <Grid 
-                templateColumns="repeat(auto-fill, minmax(280px, 1fr))" 
-                gap={6} 
+              <Heading my={"20px"}>Products</Heading>
+              <Wrap justify={{base: "center", md: "space-between"}}
+                // templateColumns="repeat(auto-fill, minmax(280px, 1fr))" 
+                gap={"10px"} 
                 mt={6}
+                mb={"20px"}
               >
                 {products && products.map((p: Product) => (
                   <Box 
@@ -277,7 +278,7 @@ const Templates: React.FC = () => {
                     <ProductCard product={p} />
                   </Box>
                 ))}
-              </Grid>
+              </Wrap>
             </Box>
           ) : shop.template === "Template-2" ? (
             <Box>

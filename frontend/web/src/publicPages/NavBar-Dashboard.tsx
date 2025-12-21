@@ -8,7 +8,7 @@ const NavBarDashboard = () => {
   
   return (
     <Box>
-        <HStack w={"100%"} justifyContent={"space-evenly"} fontSize={"20px"} fontWeight={"bold"} p={"10px"}>
+        <HStack w={"100%"} justifyContent={"space-evenly"} p={"10px"}>
             <NavLink to={"home"}>Home</NavLink>
             <NavLink to={"community"}>Community</NavLink>
             <IconButton onClick={toggleColorMode} variant="outline" size="sm">

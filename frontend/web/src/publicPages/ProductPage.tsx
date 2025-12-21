@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Box, Heading, Image, Text, HStack, VStack, Stack, Container } from "@chakra-ui/react"
+import { Box, Heading, Image, Text, HStack, VStack, Stack, Container, Wrap } from "@chakra-ui/react"
 import { useParams } from "react-router-dom"
 import api from "../services/api"
 import NavBarShop from "@/components/shop/NavBarShop"
@@ -75,7 +75,7 @@ const ProductPage: React.FC = () => {
     }
 
     return (
-        <Container>
+        <Container p={"10px"}>
             {shops && shops.map((shop: ShopDataProps) => (
                 <NavBarShop key={shop.id} logo={shop.logo} name={shop.name} />
             ))}
@@ -87,9 +87,9 @@ const ProductPage: React.FC = () => {
                     const selectedImage = sortedImages.find(img => img.id === selectedImageId)
 
                     return (
-                        <Stack flexDirection={"row"} key={p.id} gap={'20px'}>
+                        <Wrap key={p.id} gap={'20px'}>
                             {/* Left Side - Images */}
-                            <HStack align="start" gap={4}>
+                            <HStack align="start" gap={"10px"} >
                                 {sortedImages.length > 1 && (
                                     <VStack gap={2} flexWrap="wrap" h={"500px"} justify={"space-between"}>
                                         {sortedImages.map((image: ProductImage) => (
@@ -108,7 +108,7 @@ const ProductPage: React.FC = () => {
                                                     src={image.image} 
                                                     w="80px" 
                                                     h="80px" 
-                                                    objectFit="cover"
+                                                    fit={"fill"}
                                                 />
                                             </Box>
                                         ))}
@@ -164,7 +164,7 @@ const ProductPage: React.FC = () => {
                                     </Text>
                                 </Box>
                             </VStack>
-                        </Stack>
+                        </Wrap>
                     )
                 })
             ) : (

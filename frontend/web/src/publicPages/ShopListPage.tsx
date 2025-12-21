@@ -23,7 +23,7 @@ interface ShopDataProps {
     template: string;
 }
 
-const ShopList:React.FC = () => {
+const ShopListPage:React.FC = () => {
   const Navigate = useNavigate()
 
   const [shops, setShops] = useState<ShopDataProps[]>([])
@@ -83,4 +83,4 @@ const ShopList:React.FC = () => {
   )
 }
 
-export default ShopList
+export default ShopListPage
