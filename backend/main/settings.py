@@ -104,16 +104,13 @@ DATABASES = {
         'PORT': env("PORT_DB"),
     }
 }
-if DEBUG:
-    # During local dev, print emails to console to avoid SMTP/SSL issues.
-    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-else:
-    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-    EMAIL_HOST = "smtp.gmail.com"
-    EMAIL_PORT = 587
-    EMAIL_USE_TLS = True
-    EMAIL_HOST_USER = "hiephuynh81@gmail.com"      # your Gmail
-    EMAIL_HOST_PASSWORD = "eciy grkp srvu nmuo"  # Gmail App Password
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = "hiephuynh81@gmail.com"      # your Gmail
+EMAIL_HOST_PASSWORD = "eciy grkp srvu nmuo"  # Gmail App Password
 
 DEFAULT_FROM_EMAIL = env("EMAIL_HOST_USER")
 DOMAIN = env("DOMAIN")
@@ -135,6 +132,11 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+}
 SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": (
         "Bearer",

@@ -1,20 +1,44 @@
 import { BrowserRouter, Routes, Route } from "react-router"
 import Login from "./auths/Login"
-import Dashboard from "./dashboard/Dashboard"
-import Home from "./dashboard/Home"
+import Dashboard from "./publicPages/Dashboard"
 import PrivateRoute from "./services/PrivateRoute"
-import ShopAdmin from "./components/shop/ShopAdmin"
+import ShopAdmin from "./adminPages/ShopAdmin"
+import ShopPage from "./publicPages/ShopPage"
+import ShopInfo from "./adminPages/ShopInfo"
+import Register from "./auths/Register"
+import ResetPassword from "./auths/ResetPassword"
+import Activate from "./auths/Activate"
+import ResetPasswordConfirm from "./auths/ResetPasswordConfirm"
+import ShopList from "./publicPages/ShopList"
+import AddProducts from "./adminPages/AddProducts"
+import ProductPage from "./publicPages/ProductPage"
+import ShopProducts from "./adminPages/ShopProducts"
 
 function App() {
 
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Login/>}/>
-        <Route path="/dashboard" element={<PrivateRoute element={<Dashboard/>}/>}>
-          <Route index element={<Home/>}/>
-          <Route path="/dashboard/home" element={<Home/>}/>
-          <Route path="/dashboard/shopadmin" element={<ShopAdmin/>}/>
+        {/* public page paths */}
+        <Route path="/" element={<Dashboard/>}>
+          <Route index element={<ShopList/>}/>
+          <Route path="/home" element={<ShopList/>}/>
+        </Route>
+        <Route path="/shop-page/:shopId/templates" element={<ShopPage/>}/>
+        <Route path="/product-page/:shopId/:productId" element={<ProductPage/>}/>
+
+        {/* auth paths */}
+        <Route path="/login" element={<Login/>}/>
+        <Route path="/register" element={<Register/>}/>
+        <Route path="/reset-password" element={<ResetPassword/>}/>
+        <Route path="/activate/:uid/:token" element={<Activate/>} />
+        <Route path="/password-reset/confirm/:uid/:token" element={<ResetPasswordConfirm/>} />
+      {/* management pages paths */}
+        <Route path="/management" element={<PrivateRoute element={<ShopAdmin/>}/>}>
+          <Route index element={<ShopInfo/>}/>
+          <Route path="/management/shop-info" element={<ShopInfo/>}/>
+          <Route path="/management/shop-product/add-product" element={<AddProducts/>}/>
+          <Route path="/management/shop-product" element={<ShopProducts/>}/>
         </Route>
       </Routes>
     </BrowserRouter>

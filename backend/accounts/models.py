@@ -6,11 +6,11 @@ from core.utils import custom_id
 
 # Create your models here.
 def default_account_id():
-    return custom_id().lower()
+    return custom_id(prefix="acc").lower()
 class User(AbstractBaseUser, PermissionsMixin):
     id = models.CharField(
         primary_key=True,
-        max_length=25,
+        max_length=255,
         default=default_account_id,
         editable=False,
         unique=True,
@@ -43,7 +43,7 @@ class Member(models.Model):
     ]
     id = models.CharField(
         primary_key=True,
-        max_length=25,
+        max_length=255,
         default=default_account_id,
         editable=False,
         unique=True,
@@ -65,3 +65,6 @@ class Member(models.Model):
     @property
     def member_full_name(self):
         return f'{self.first_name} {self.last_name}'
+
+
+    
