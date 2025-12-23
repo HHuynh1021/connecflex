@@ -13,7 +13,7 @@ import {
 } from "@chakra-ui/react"
 import { useParams } from "react-router"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import api from "../services/api"
+import api from "../../services/api"
 
 interface ProductImage {
     id: string
@@ -38,7 +38,6 @@ const ProductListShop: React.FC = () => {
     const [isLoading, setIsLoading] = useState<boolean>(false)
     const [error, setError] = useState<string>("")
     const [currentImageIndex, setCurrentImageIndex] = useState<{ [key: string]: number }>({})
-
     const fetchProductList = async () => {
         if (!shopId) {
             console.log("No shopId available")
@@ -119,7 +118,6 @@ const ProductListShop: React.FC = () => {
             </Center>
         )
     }
-
     if (error) {
         return (
             <Center h="400px">
@@ -134,7 +132,6 @@ const ProductListShop: React.FC = () => {
             </Center>
         )
     }
-
     if (!shopId) {
         return (
             <Center h="400px">
@@ -289,28 +286,7 @@ const ProductListShop: React.FC = () => {
                                 <Box p={4}>
                                     <Heading size="md" mb={2} overflow="hidden" textOverflow="ellipsis" display="-webkit-box" css={{ WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                                         {product.name}
-                                    </Heading>
-                                    
-                                    {/* {product.category && (
-                                        <Text 
-                                            fontSize="sm" 
-                                            color="gray.600" 
-                                            mb={2}
-                                            fontWeight="medium"
-                                        >
-                                            {product.category}
-                                        </Text>
-                                    )}
-                                    
-                                    {product.description && (
-                                        <Text 
-                                            fontSize="sm" 
-                                            color="gray.700" 
-                                            mb={3}
-                                        >
-                                            {product.description}
-                                        </Text>
-                                    )} */}
+                                    </Heading>                              
                                     
                                     <Text 
                                         fontSize="xl" 
@@ -339,5 +315,4 @@ const ProductListShop: React.FC = () => {
         </Box>
     )
 }
-
 export default ProductListShop

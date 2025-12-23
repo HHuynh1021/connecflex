@@ -1,9 +1,8 @@
-import {useState} from 'react'
-import useProductList from '../components/products/ProductListHook'
-import { IconButton, HStack, Heading, Image, Wrap, Box, Text, Center, Badge, Container } from '@chakra-ui/react'
+import { useEffect, useState } from "react"
+import { useParams } from "react-router"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import { useNavigate } from 'react-router'
-import useShop from '@/components/shop/ShopHook'
+import api from "../../services/api"
+import { Box, Heading, Image, Text, Wrap, Center, Spinner, IconButton, HStack, Badge} from "@chakra-ui/react"
 
 interface ProductImage {
     id: string
@@ -12,24 +11,62 @@ interface ProductImage {
     order: number
 }
 
-interface ProductListProps {
+interface Product {
     id: string
     name: string
     shop_id: string
-    shop_name: string
-    images: ProductImage[]
+    images: ProductImage[]  // ← Include images in the Product interface
     description: string
     price: string
     category: string
 }
-const ProductListPage = () => {
-    const { products, isLoading, error } = useProductList()
+
+const MultipleProductImages: React.FC = () => {
+    const { shopId, productId } = useParams()
+    const [products, setProducts] = useState<Product[]>([])
+    const [isLoading, setIsLoading] = useState<boolean>(false)
+    const [error, setError] = useState<string>("")
     const [currentImageIndex, setCurrentImageIndex] = useState<{ [key: string]: number }>({})
-    const [selectedProduct, setSelectedProduct] = useState<string>("")
-    const Navigate = useNavigate()
 
+    const fetchProductList = async () => {
+        if (!shopId) {
+            console.log("No shopId available")
+            return
+        }
 
-        const getCurrentImage = (productId: string, images: ProductImage[]) => {
+        setIsLoading(true)
+        setError("")
+
+        try {
+            const url = `${import.meta.env.VITE_API_BASE_URL}/shops/product-list-view/`
+            const res = await api.get(url)
+            
+            // Handle response structure
+            const data = Array.isArray(res.data) ? res.data : (Array.isArray(res.data[0]) ? res.data[0] : [res.data])
+            
+            // Filter products by shop_id
+            const filteredProducts = data.filter((product: Product) => 
+                product.shop_id === shopId && product.id !== productId
+            )
+            
+            console.log("Filtered products:", filteredProducts)
+            setProducts(filteredProducts)
+        } catch (err: any) {
+            console.error("Failed to fetch products:", err)
+            setError(err.response?.data?.message || "Failed to load products")
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        if (shopId) {
+            fetchProductList()
+        }
+    }, [shopId])
+
+    // Get current image to display
+    const getCurrentImage = (productId: string, images: ProductImage[]) => {
         if (!images || images.length === 0) return null
         const index = currentImageIndex[productId] || 0
         return images[index] || images[0]
@@ -62,43 +99,46 @@ const ProductListPage = () => {
         return images.find(img => img.is_primary) || images[0]
     }
 
-    if(isLoading) {
-        return <Box p={"10px"}>Loaing Products...</Box>
+    if (isLoading) {
+        return (
+            <Center h="400px">
+                <Spinner size="xl" />
+            </Center>
+        )
     }
+
     if (error) {
-        return <Box p={"10px"} color={"red.500"}>Error loading products</Box>
-    }
-    if (!products || products.length === 0){
-        return <Box p={"10px"}>No products found</Box>
-    }
-
-    const handleClickProduct = (productId: string, shopId: string) => {
-        Navigate(`/product-page/${shopId}/${productId}`)
-    }
-  return (
-    <Container>
-        <Heading>Product List</Heading>
-        {/* { products.map((p: ProductListProps) => {
-            const primaryImage = p.images.find(img => img.is_primary) || p.images[0].image
-            return (
-                <Box key={p.id} cursor="pointer" _hover={{ shadow: 'lg' }}>
-                    {primaryImage && (
-                        <Image 
-                            src={primaryImage} 
-                            alt={p.name} height={"200px"}
-                            h={"200px"}
-                            w={"200px"}
-                            fit={"fill"}
-                        />
-                    )
-
-                    }
+        return (
+            <Center h="400px">
+                <Box textAlign="center">
+                    <Text color="red.500" fontSize="lg" mb={2}>
+                        {error}
+                    </Text>
+                    <Text color="gray.600" fontSize="sm">
+                        Please try refreshing the page
+                    </Text>
                 </Box>
-            )
-        })} */}
-        <Wrap gap="20px" justify="space-between">
+            </Center>
+        )
+    }
+
+    if (!shopId) {
+        return (
+            <Center h="400px">
+                <Box textAlign="center">
+                    <Text fontSize="lg" color="gray.600" mb={2}>
+                        No shop ID provided
+                    </Text>
+                </Box>
+            </Center>
+        )
+    }
+
+    return (
+        <Box p={"10px"}>
+            <Wrap gap="20px" justify={{md: "space-between", base:"center"}}>
                 {products.length > 0 ? (
-                    products.map((product: ProductListProps) => {
+                    products.map((product) => {
                         const currentImage = getCurrentImage(product.id, product.images)
                         const hasMultipleImages = product.images && product.images.length > 1
                         const currentIndex = currentImageIndex[product.id] || 0
@@ -106,8 +146,6 @@ const ProductListPage = () => {
                         return (
                             <Box 
                                 key={product.id}
-                                onClick={() => handleClickProduct(product.id, product.shop_id)}
-                                cursor={"pointer"}
                                 borderWidth="1px"
                                 borderRadius="lg"
                                 overflow="hidden"
@@ -126,7 +164,6 @@ const ProductListPage = () => {
                                             src={currentImage.image}
                                             alt={product.name}
                                             fit={"fill"}
-                                            borderBottom={"1px solid"}
                                         />
                                     ) : (
                                         <Center h="100%">
@@ -234,13 +271,10 @@ const ProductListPage = () => {
                                 {/* Product Details */}
                                 <Box p={4}>
                                     <Heading size="md" mb={2}>
-                                        {product.shop_name}
-                                    </Heading>
-                                    <Heading size="md" mb={2}>
                                         {product.name}
                                     </Heading>
                                     
-                                    {/* {product.category && (
+                                    {product.category && (
                                         <Text 
                                             fontSize="sm" 
                                             color="gray.600" 
@@ -249,13 +283,14 @@ const ProductListPage = () => {
                                         >
                                             {product.category}
                                         </Text>
-                                    )} */}
+                                    )}
                                     
                                     {product.description && (
                                         <Text 
                                             fontSize="sm" 
                                             color="gray.700" 
                                             mb={3}
+                                        
                                         >
                                             {product.description}
                                         </Text>
@@ -278,12 +313,15 @@ const ProductListPage = () => {
                             <Text fontSize="lg" color="gray.600" mb={2}>
                                 No Products Yet
                             </Text>
+                            <Text fontSize="sm" color="gray.500">
+                                Add your first product to get started
+                            </Text>
                         </Box>
                     </Center>
                 )}
             </Wrap>
-    </Container>
-  )
+        </Box>
+    )
 }
 
-export default ProductListPage
+export default MultipleProductImages

@@ -1,7 +1,5 @@
-import {useEffect, useState, useRef} from 'react'
-import { Outlet, useNavigate } from 'react-router-dom'
-import { useSelector } from 'react-redux'
-import useAccessToken from '../services/token'
+import {useEffect, useState} from 'react'
+import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import { Box, Text, Heading, Avatar, HStack, Wrap, Container,} from '@chakra-ui/react'
 import { toaster } from '../components/ui/toaster'
@@ -52,7 +50,7 @@ const ShopListPage:React.FC = () => {
     fetchShopData()
   },[])
   const handleClickDetail = (shopId: string) => {
-    Navigate(`/shop-page/${shopId}/templates`)
+    Navigate(`/shop-page/templates/${shopId}`)
   }
   return (
     <Container>

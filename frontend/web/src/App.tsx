@@ -3,7 +3,7 @@ import Login from "./auths/Login"
 import Dashboard from "./publicPages/Dashboard"
 import PrivateRoute from "./services/PrivateRoute"
 import ShopAdmin from "./adminPages/ShopAdmin"
-import ShopPage from "./publicPages/ShopPage"
+import ShopPage from "./publicPages/ShopDetailPage"
 import ShopInfo from "./adminPages/ShopInfo"
 import Register from "./auths/Register"
 import ResetPassword from "./auths/ResetPassword"
@@ -11,7 +11,7 @@ import Activate from "./auths/Activate"
 import ResetPasswordConfirm from "./auths/ResetPasswordConfirm"
 import ShopListPage from "./publicPages/ShopListPage"
 import AddProducts from "./adminPages/AddProducts"
-import ProductPage from "./publicPages/ProductPage"
+import ProductPage from "./components/products/ProductDetailByShop"
 import ShopProducts from "./adminPages/ShopProducts"
 import ProductListPage from "./publicPages/ProductListPage"
 import HomePage from "./publicPages/HomePage"
@@ -28,7 +28,7 @@ function App() {
           <Route path="/home/shop-list" element={<ShopListPage/>}/>
           <Route path="/home/product-list/" element={<ProductListPage/>}/>
         </Route>
-        <Route path="/shop-page/:shopId/templates" element={<ShopPage/>}/>
+        <Route path="/shop-page/templates/:shopId" element={<ShopPage/>}/>
         <Route path="/product-page/:shopId/:productId" element={<ProductPage/>}/>
 
         {/* auth paths */}

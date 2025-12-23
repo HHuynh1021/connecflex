@@ -4,8 +4,7 @@ import { useSelector } from 'react-redux'
 import api from '../services/api'
 import { Box, VStack, Container,} from '@chakra-ui/react'
 import { toaster } from '../components/ui/toaster'
-import Template from '../components/shop/Templates'
-import Templates from '../components/shop/Templates'
+import Templates from '../components/templates/Templates'
 
 interface ShopDataProps {
     id: string
@@ -23,9 +22,6 @@ interface ShopDataProps {
     logo: string
     banner: string;
     template: string;
-}
-interface TemplateProp {
-  shopId: string;
 }
 const ShopPage:React.FC = () => {
   const Navigate = useNavigate()

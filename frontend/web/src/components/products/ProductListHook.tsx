@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react"
 import { Box, Text, Center, Spinner} from "@chakra-ui/react"
-import { useParams } from "react-router"
-import { ChevronLeft, ChevronRight } from "lucide-react"
-import api from "../services/api"
+import api from "../../services/api"
 
 interface ProductImage {
     id: string
@@ -20,7 +18,6 @@ interface Product {
     price: string
     category: string
 }
-
 const useProductList = () => {
     const [products, setProducts] = useState<Product[]>([])
     const [isLoading, setIsLoading] = useState<boolean>(false)
@@ -34,8 +31,6 @@ const useProductList = () => {
             const url = `${import.meta.env.VITE_API_BASE_URL}/shops/product-list-view/`
             const res = await api.get(url)
             
-            console.log("API Response:", res.data)
-            
             // Handle response structure
             const data = Array.isArray(res.data) ? res.data : (Array.isArray(res.data[0]) ? res.data[0] : [res.data])
             
@@ -48,7 +43,6 @@ const useProductList = () => {
             setIsLoading(false)
         }
     }
-
     useEffect(() => {
         fetchProductList()
     }, [])
@@ -60,7 +54,6 @@ const useProductList = () => {
             </Center>
         )
     }
-
     if (products.length === 0) {
         return (
             <Center h="400px">
@@ -72,8 +65,6 @@ const useProductList = () => {
             </Center>
         )
     }
-
     return {products, isLoading, error}
 }
-
 export default useProductList

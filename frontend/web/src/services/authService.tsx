@@ -101,22 +101,6 @@ const getUserInfo = async (accessToken:string) => {
     return response.data
 }
 
-// // Create axios instance for authenticated requests
-// export const createAuthenticatedApi = (token: string) => {
-//   return axios.create({
-//     headers: {
-//       Authorization: `Bearer ${token}`,
-//     },
-//   });
-// };
-
-// // Example: Get authenticated data
-// export const getProtectedData = async (token: string) => {
-//   const authApi = createAuthenticatedApi(token);
-//   const response = await authApi.get("protected-endpoint/");
-//   return response.data;
-// };
-
 export const authService = {
   register,
   login,
