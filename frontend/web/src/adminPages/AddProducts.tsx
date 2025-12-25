@@ -6,7 +6,7 @@ import useAccessToken from '../services/token'
 
 import api from '../services/api'
 import { getUserInfo } from '../services/authSlice'
-import { Box, Input, Textarea, Button,Stack,Image,Text,Heading,Container,Grid,IconButton,Badge,} from '@chakra-ui/react'
+import { Box, Input, Textarea, Button,Stack,Image,Text,Heading,Container,Grid,IconButton,Badge, VStack, HStack,} from '@chakra-ui/react'
 import { Field } from '@chakra-ui/react/field'
 import { toaster } from '../components/ui/toaster'
 import useShopAdmin from '../adminPages/ShopHookAdmin'
@@ -19,12 +19,21 @@ interface ImagePreview {
 }
 
 interface ProductFormData {
-    name: string
-    shop_id: string
-    description: string
-    price: string
-    category: string
-    image: string
+    name: string;
+    shop_id: string;
+    description: string;
+    price: string;
+    new_price: string;
+    discount_end_at: string;
+    currency_unit: string;
+    condition: string
+    guaranty: string
+    color: string;
+    dimension: string;
+    weight: string;
+    other: string;
+    category: string;
+    image: string;
 }
 
 const AddProducts: React.FC = () => {
@@ -52,8 +61,17 @@ const AddProducts: React.FC = () => {
         shop_id: "",
         description: "",
         price: "",
+        new_price: "",
+        discount_end_at: "",
+        currency_unit: "",
+        condition: "",
+        guaranty: "",
+        color: "",
+        dimension: "",
+        weight: "",
+        other: "",
         category: "",
-        image:""
+        image: "",
     })
 
     // Multiple images state
@@ -79,6 +97,14 @@ const AddProducts: React.FC = () => {
     // Handle form field changes
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    ) => {
+        setFormData({
+            ...formData,
+            [e.target.name]: e.target.value,
+        })
+    }
+    const handleSelectChange = (
+        e: React.ChangeEvent<HTMLSelectElement>
     ) => {
         setFormData({
             ...formData,
@@ -258,10 +284,18 @@ const AddProducts: React.FC = () => {
                 shop_id: formData.shop_id,
                 description: formData.description,
                 price: formData.price,
+                new_price: formData.new_price,
+                discount_end_at: formData.discount_end_at,
+                currency_unit: formData.currency_unit,
+                condition: formData.condition,
+                guaranty: formData.guaranty,
+                color: formData.color,
+                dimension: formData.dimension,
+                weight: formData.weight,
+                other: formData.other,
                 category: formData.category,
+                image: formData.image
             }
-
-            console.log("Creating product with data:", productData)
 
             const productResponse = await api.post(productUrl, productData, {
                 headers: {
@@ -315,11 +349,20 @@ const AddProducts: React.FC = () => {
             const currentShopId = formData.shop_id
             setFormData({
                 name: "",
-                shop_id: currentShopId,
+                shop_id: "",
                 description: "",
                 price: "",
+                new_price: "",
+                discount_end_at: "",
+                currency_unit: "",
+                condition:"",
+                guaranty:"",
+                color: "",
+                dimension: "",
+                weight: "",
+                other: "",
                 category: "",
-                image:""
+                image: "",
             })
             setImages([])
 
@@ -345,7 +388,9 @@ const AddProducts: React.FC = () => {
                     <Stack gap={5}>
                         {/* Product Name */}
                         <Field.Root required>
-                            <Field.Label>Product Name</Field.Label>
+                            <Field.Label>
+                                Product Name <Field.RequiredIndicator />
+                            </Field.Label>
                             <Input
                                 name="name"
                                 value={formData.name}
@@ -356,7 +401,7 @@ const AddProducts: React.FC = () => {
                         </Field.Root>
 
                         {/* Shop ID - Display only */}
-                        <Field.Root>
+                        {/* <Field.Root>
                             <Field.Label>Shop ID</Field.Label>
                             <Input
                                 name="shop_id"
@@ -371,11 +416,13 @@ const AddProducts: React.FC = () => {
                                     ? `Using shop: ${shops[0]?.name || 'Your Shop'}`
                                     : 'No shop found. Please create a shop first.'}
                             </Field.HelperText>
-                        </Field.Root>
+                        </Field.Root> */}
 
                         {/* Price */}
                         <Field.Root required>
-                            <Field.Label>Price</Field.Label>
+                            <Field.Label>
+                                Price <Field.RequiredIndicator />
+                            </Field.Label>
                             <Input
                                 name="price"
                                 type="number"
@@ -386,8 +433,70 @@ const AddProducts: React.FC = () => {
                                 size="lg"
                             />
                         </Field.Root>
-
-                        {/* Category */}
+                        <Field.Root>
+                            <Field.Label>Discount Price</Field.Label>
+                            <Input
+                                name="new_price"
+                                type="number"
+                                step="0.01"
+                                value={formData.new_price}
+                                onChange={handleChange}
+                                placeholder="0.00"
+                                size="lg"
+                            />
+                        </Field.Root>
+                        <Field.Root>
+                            <Field.Label>Discount end at</Field.Label>
+                            <Input
+                                name="discount_end_at"
+                                type="datetime-local"
+                                step="0.01"
+                                value={formData.discount_end_at}
+                                onChange={handleChange}
+                                placeholder="0.00"
+                                disabled={!formData.new_price}
+                                size="lg"
+                            />
+                        </Field.Root>
+                        <label htmlFor="currency_unit">Currency Unit:</label>
+                        <select
+                            id='currency_unit'
+                            name='currency_unit'
+                            value={formData.currency_unit}
+                            onChange={handleSelectChange}
+                            style={{border:"1px solid", borderRadius:"5px", padding:"10px"}}
+                        >
+                            <option value={""}>Choose one</option>
+                            <option value={"EUR"}>EUR</option>
+                            <option value={"VND"}>VND</option>
+                            <option value={"USD"}>USD</option>
+                        </select>
+                        <label htmlFor="condition"><HStack>Product Condition <Text color={"red"}>*</Text></HStack></label>
+                        <select
+                            required
+                            id='condition'
+                            name='condition'
+                            value={formData.condition}
+                            onChange={handleSelectChange}
+                            style={{border:"1px solid", borderRadius:"5px", padding:"10px"}}
+                        >
+                            <option value="">Choose one</option>
+                            <option value="NEW">NEW</option>
+                            <option value="USED - LIKE NEW">USED - LIKE NEW</option>
+                            <option value="USED - GOOD">USED - GOOD</option>
+                            <option value="NOT WORKING">NOT WORKING</option>
+                            <option value="BROKEN">BROKEN</option>
+                        </select>
+                        <Field.Root>
+                            <Field.Label>Guaranty</Field.Label>
+                            <Input
+                                name="guaranty"
+                                value={formData.guaranty}
+                                onChange={handleChange}
+                                placeholder="Enter guaranty"
+                                size="lg"
+                            />
+                        </Field.Root>
                         <Field.Root>
                             <Field.Label>Category</Field.Label>
                             <Input
@@ -395,6 +504,46 @@ const AddProducts: React.FC = () => {
                                 value={formData.category}
                                 onChange={handleChange}
                                 placeholder="Enter category"
+                                size="lg"
+                            />
+                        </Field.Root>
+                        <Field.Root>
+                            <Field.Label>Color</Field.Label>
+                            <Input
+                                name="color"
+                                value={formData.color}
+                                onChange={handleChange}
+                                placeholder="Enter color"
+                                size="lg"
+                            />
+                        </Field.Root>
+                        <Field.Root>
+                            <Field.Label>Dimension</Field.Label>
+                            <Input
+                                name="dimension"
+                                value={formData.dimension}
+                                onChange={handleChange}
+                                placeholder="Enter dimension"
+                                size="lg"
+                            />
+                        </Field.Root>
+                        <Field.Root>
+                            <Field.Label>Weight</Field.Label>
+                            <Input
+                                name="weight"
+                                value={formData.weight}
+                                onChange={handleChange}
+                                placeholder="Enter weight"
+                                size="lg"
+                            />
+                        </Field.Root>
+                        <Field.Root>
+                            <Field.Label>Others</Field.Label>
+                            <Input
+                                name="other"
+                                value={formData.other}
+                                onChange={handleChange}
+                                placeholder="Enter other"
                                 size="lg"
                             />
                         </Field.Root>

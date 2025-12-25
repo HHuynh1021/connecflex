@@ -1,15 +1,15 @@
-import {Box} from "@chakra-ui/react"
+import {Box, Container} from "@chakra-ui/react"
 import { Outlet } from "react-router-dom"
 import NavBarDashboard from "./NavBar-Dashboard"
 
 const Dashboard:React.FC = () => {
     return (
-        <Box w={'100%'} maxW={"100vw"}>
+        <Container maxW={'1100px'} p={"10px"}>
             <NavBarDashboard/>
             <Box p={"10px"}>
                 <Outlet/>
             </Box>
-        </Box>
+        </Container>
     )
 }
 export default Dashboard

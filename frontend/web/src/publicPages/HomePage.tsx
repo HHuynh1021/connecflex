@@ -4,11 +4,11 @@ import ShopListPage from './ShopListPage'
 
 const HomePage = () => {
   return (
-    <Container>
+    <Container maxW={'1100px'} p={"10px"}>
         <Tabs.Root defaultValue="product">
             <Tabs.List>
-                <Tabs.Trigger value='product'>Products</Tabs.Trigger>
-                <Tabs.Trigger value='shop'>Shops</Tabs.Trigger>
+                <Tabs.Trigger value='product' fontSize={"18px"}>Products</Tabs.Trigger>
+                <Tabs.Trigger value='shop' fontSize={"18px"}>Shops</Tabs.Trigger>
             </Tabs.List>
             <Tabs.Content value='product'>
                 <ProductListPage/>

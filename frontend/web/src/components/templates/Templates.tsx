@@ -39,12 +39,21 @@ interface ProductImage {
 
 interface Product {
   id: string
-  name: string
-  shop_id: string
-  images: ProductImage[]
-  description: string
-  price: string
-  category: string
+  name: string;
+  shop_id: string;
+  description: string;
+  price: string;
+  new_price: string;
+  discount_end_at: string;
+  currency_unit: string;
+  condition: string
+  guaranty: string
+  color: string;
+  dimension: string;
+  weight: string;
+  other: string;
+  category: string;
+  image: string;
 }
 
 const Templates: React.FC = () => {

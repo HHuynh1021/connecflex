@@ -30,26 +30,44 @@ class ProductImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductImage
         fields = ['id', 'image', 'product_id', 'is_primary', 'order', 'created_at']
-        # product_id is the foreign key field name in the model
 
 class ProductSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, read_only=True)
     shop_name = serializers.SerializerMethodField()
+    shop_address = serializers.SerializerMethodField()
+    discount = serializers.SerializerMethodField()
+    shop_city = serializers.SerializerMethodField()
+    current_price = serializers.SerializerMethodField()
     
     class Meta:
         model = Product
-        fields = [
-            'id',
-            'name',
-            'shop_id',
-            'shop_name',
-            'description',
-            'price',
-            'category',
-            'images',
-            'created_at',
-            'updated_at'
-        ]
+        fields = "__all__"
         read_only_fields = ('id',)
+    
     def get_shop_name(self, obj):
         return obj.shop_id.name
+    
+    def get_shop_address(self, obj):
+        if not obj.shop_id:
+            return None
+        address_parts = [
+            obj.shop_id.street,
+            obj.shop_id.city,
+            obj.shop_id.province,
+            obj.shop_id.state,
+            obj.shop_id.zipcode,
+            obj.shop_id.country,
+        ]
+        return ", ".join(filter(None, address_parts))
+    
+    def get_discount(self, obj):
+        current_price = obj.current_new_price
+        if current_price > 0 and obj.price > current_price:
+            return obj.price - current_price
+        return 0
+    
+    def get_shop_city(self, obj):
+        return obj.shop_id.city
+    
+    def get_current_price(self, obj):
+        return obj.current_new_price

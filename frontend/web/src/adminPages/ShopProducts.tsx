@@ -1,26 +1,13 @@
 import {useEffect, useState, useRef} from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import useAccessToken from '../services/token'
 import api from '../services/api'
-import { 
-    Box, 
-    Text, 
-    Stack,
-    Input, 
-    Textarea, 
-    Button, 
-    Spinner,
-    Heading,
-    Separator,
-    Group,
-    Image,
-    Grid,
-    HStack,
-    Wrap,
-} from '@chakra-ui/react'
+import { Box, Text, Stack, Input, Textarea, Button, Spinner, Heading, Separator,
+    Group, Image, HStack, Wrap } from '@chakra-ui/react'
 import { Field } from '@chakra-ui/react/field'
 import { toaster } from '../components/ui/toaster'
+import formatDate from '@/components/formatDate'
 
 interface ProductImage {
     id: string
@@ -31,13 +18,48 @@ interface ProductImage {
 
 interface ProductProp {
     id: string
-    name: string
-    shop_id: string
+    name: string;
+    shop_id: string;
+    description: string;
+    price: string;
+    new_price: string;
+    discount_end_at: string;
+    currency_unit: string;
+    condition: string;
+    color: string;
+    dimension: string;
+    weight: string;
+    other: string;
+    category: string;
     images: ProductImage[]
-    description: string
-    price: string
-    category: string
 }
+
+// ✅ Add helper functions for datetime conversion
+const convertUTCToLocal = (utcDatetime: string): string => {
+    if (!utcDatetime) return '';
+    try {
+        const date = new Date(utcDatetime);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+    } catch (error) {
+        console.error('Error converting UTC to local:', error);
+        return '';
+    }
+};
+
+const convertLocalToUTC = (localDatetime: string): string => {
+    if (!localDatetime) return '';
+    try {
+        return new Date(localDatetime).toISOString();
+    } catch (error) {
+        console.error('Error converting local to UTC:', error);
+        return '';
+    }
+};
 
 const ShopProducts: React.FC = () => {
     const navigate = useNavigate()
@@ -46,16 +68,10 @@ const ShopProducts: React.FC = () => {
     const [products, setProducts] = useState<ProductProp[]>([])
     const [isLoading, setLoading] = useState<boolean>(false)
     
-    // Track which field is being edited for which product
     const [editingField, setEditingField] = useState<{productId: string, fieldName: string} | null>(null)
-    
-    // Temporary values while editing
     const [tempValue, setTempValue] = useState<string>('')
-    
-    // Track updating state
     const [isUpdating, setIsUpdating] = useState<boolean>(false)
     
-    // For image file upload
     const [imageFile, setImageFile] = useState<File | null>(null)
     const [imagePreview, setImagePreview] = useState<string>('')
     const fileInputRef = useRef<HTMLInputElement>(null)
@@ -71,7 +87,6 @@ const ShopProducts: React.FC = () => {
             })
             return
         }
-
         try {
             const url = `${import.meta.env.VITE_API_BASE_URL}/shops/product-list-create/`
             const config = {
@@ -82,8 +97,6 @@ const ShopProducts: React.FC = () => {
             }
             const response = await api.get(url, config)
             const data = Array.isArray(response.data[0]) ? response.data[0] : response.data
-            console.log("product data: ", data)
-            console.log("first product images: ", data[0]?.images)
             setProducts(data)
         } catch (error: any) {
             console.error("fetching error", error.response?.data || error.message)
@@ -104,13 +117,13 @@ const ShopProducts: React.FC = () => {
         }
     }, [accessToken, user])
     
-    // Start editing a field
-    const handleEdit = (productId: string, fieldName: keyof ProductProp, currentValue: string) => {
+    // ✅ Updated handleEdit to convert datetime to local
+    const handleEdit = (productId: string, fieldName: keyof ProductProp, currentValue: string, isDatetime: boolean = false) => {
         setEditingField({ productId, fieldName })
-        setTempValue(currentValue)
+        // Convert UTC to local if it's a datetime field
+        setTempValue(isDatetime ? convertUTCToLocal(currentValue) : currentValue)
     }
 
-    // Cancel editing
     const handleCancel = () => {
         setEditingField(null)
         setTempValue('')
@@ -118,11 +131,9 @@ const ShopProducts: React.FC = () => {
         setImagePreview('')
     }
 
-    // Handle image file selection
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (file) {
-            // Validate file type
             if (!file.type.startsWith('image/')) {
                 toaster.create({
                     title: 'Invalid File',
@@ -133,7 +144,6 @@ const ShopProducts: React.FC = () => {
                 return
             }
             
-            // Validate file size (e.g., max 5MB)
             if (file.size > 5 * 1024 * 1024) {
                 toaster.create({
                     title: 'File Too Large',
@@ -146,7 +156,6 @@ const ShopProducts: React.FC = () => {
             
             setImageFile(file)
             
-            // Create preview
             const reader = new FileReader()
             reader.onloadend = () => {
                 setImagePreview(reader.result as string)
@@ -155,39 +164,32 @@ const ShopProducts: React.FC = () => {
         }
     }
 
-    // Handle image deletion
     const handleDeleteImage = async (productId: string, imageId: string) => {
         if (!accessToken) {
             navigate("/")
             return
         }
 
-        console.log("Deleting image:", { productId, imageId })
-
         if (!window.confirm('Are you sure you want to delete this image?')) {
             return
         }
 
         setIsUpdating(true)
-
         try {
             const url = `${import.meta.env.VITE_API_BASE_URL}/shops/product-image-editor/${imageId}/`
-            console.log("Delete URL:", url)
             const config = {
                 headers: {
                     Authorization: `Bearer ${accessToken}`,
                 },
             }
-
             await api.delete(url, config)
-
-            // Update local state by removing the deleted image
+            
             setProducts(products.map(product => 
                 product.id === productId 
                     ? { ...product, images: product.images.filter(img => img.id !== imageId) }
                     : product
             ))
-
+            
             toaster.create({
                 title: 'Success',
                 description: 'Image deleted successfully',
@@ -207,15 +209,12 @@ const ShopProducts: React.FC = () => {
         }
     }
 
-    // Handle setting primary image
     const handleSetPrimaryImage = async (productId: string, imageId: string) => {
         if (!accessToken) {
             navigate("/")
             return
         }
-
         setIsUpdating(true)
-
         try {
             const url = `${import.meta.env.VITE_API_BASE_URL}/shops/product-image-editor/${imageId}/`
             const config = {
@@ -224,10 +223,8 @@ const ShopProducts: React.FC = () => {
                     "Content-Type": "application/json",
                 },
             }
-
             await api.patch(url, { is_primary: true }, config)
-
-            // Update local state - set this image as primary and others as non-primary
+            
             setProducts(products.map(product => 
                 product.id === productId 
                     ? { 
@@ -239,7 +236,7 @@ const ShopProducts: React.FC = () => {
                       }
                     : product
             ))
-
+            
             toaster.create({
                 title: 'Success',
                 description: 'Primary image updated successfully',
@@ -259,19 +256,15 @@ const ShopProducts: React.FC = () => {
         }
     }
 
-    // Handle product deletion
     const handleDeleteProduct = async (productId: string) => {
         if (!accessToken) {
             navigate("/")
             return
         }
-
         if (!window.confirm('Are you sure you want to delete this product? This will also delete all associated images.')) {
             return
         }
-
         setIsUpdating(true)
-
         try {
             const url = `${import.meta.env.VITE_API_BASE_URL}/shops/product-editor/${productId}/`
             const config = {
@@ -279,12 +272,10 @@ const ShopProducts: React.FC = () => {
                     Authorization: `Bearer ${accessToken}`,
                 },
             }
-
             await api.delete(url, config)
-
-            // Update local state by removing the deleted product
+            
             setProducts(products.filter(product => product.id !== productId))
-
+            
             toaster.create({
                 title: 'Success',
                 description: 'Product deleted successfully',
@@ -304,8 +295,8 @@ const ShopProducts: React.FC = () => {
         }
     }
 
-    // Update a single field
-    const handleUpdateField = async (productId: string, fieldName: keyof ProductProp) => {
+    // ✅ Updated handleUpdateField to convert datetime to UTC
+    const handleUpdateField = async (productId: string, fieldName: keyof ProductProp, isDatetime: boolean = false) => {
         if (!accessToken) {
             navigate("/")
             return
@@ -318,18 +309,13 @@ const ShopProducts: React.FC = () => {
             
             let config: any
             
-            // Handle image upload differently
             if (fieldName === 'images' && imageFile) {
-                // Use FormData for file upload
                 const formData = new FormData()
                 formData.append('image', imageFile)
-                formData.append('product_id', productId)  // ✅ Use product_id (field name in serializer)
+                formData.append('product_id', productId)
                 formData.append('is_primary', 'false')
                 formData.append('order', '0')
                 
-                console.log('Uploading image with product_id:', productId)
-                
-                // Upload to product-image-create endpoint
                 const uploadUrl = `${import.meta.env.VITE_API_BASE_URL}/shops/product-image-create/`
                 
                 config = {
@@ -341,14 +327,12 @@ const ShopProducts: React.FC = () => {
                 
                 const response = await api.post(uploadUrl, formData, config)
                 
-                // Update local state with the new image from response
                 setProducts(products.map(product => 
                     product.id === productId 
                         ? { ...product, images: [...product.images, response.data] }
                         : product
                 ))
             } else {
-                // Regular field update
                 config = {
                     headers: {
                         Authorization: `Bearer ${accessToken}`,
@@ -356,16 +340,19 @@ const ShopProducts: React.FC = () => {
                     },
                 }
                 
+                // ✅ Convert local datetime to UTC before sending
+                const valueToSend = isDatetime ? convertLocalToUTC(tempValue) : tempValue;
+                
                 const updateData = {
-                    [fieldName]: tempValue
+                    [fieldName]: valueToSend
                 }
                 
                 await api.patch(url, updateData, config)
                 
-                // Update local state
+                // ✅ Update local state with UTC value
                 setProducts(products.map(product => 
                     product.id === productId 
-                        ? { ...product, [fieldName]: tempValue }
+                        ? { ...product, [fieldName]: valueToSend }
                         : product
                 ))
             }
@@ -394,17 +381,28 @@ const ShopProducts: React.FC = () => {
         }
     }
 
-    // Render a single field with edit functionality
+    // ✅ Fixed renderField function
     const renderField = (
         product: ProductProp, 
         fieldName: keyof ProductProp, 
         label: string, 
-        isTextarea: boolean = false
+        isTextarea: boolean = false,
+        isDatetime: boolean = false,
+        isSelection: boolean = false
     ) => {
-        const isEditing = editingField?.productId === product.id && editingField?.fieldName === fieldName
-        const currentValue = isEditing ? tempValue : String(product[fieldName] || '')
-        const isFieldDisabled = editingField !== null && !isEditing
-
+        const isEditing = editingField?.productId === product.id && editingField?.fieldName === fieldName;
+        
+        // Get the raw value from product
+        const rawValue = String(product[fieldName] || '');
+        
+        // For editing: use tempValue (already in local format from handleEdit)
+        // For display: show formatted datetime or raw value
+        const displayValue = isDatetime && rawValue
+            ? formatDate(rawValue)  // Format UTC to human-readable local time
+            : rawValue || 'Not set';
+        
+        const isFieldDisabled = editingField !== null && !isEditing;
+        
         return (
             <Box key={fieldName}>
                 <Field.Root>
@@ -416,14 +414,34 @@ const ShopProducts: React.FC = () => {
                             {isEditing ? (
                                 isTextarea ? (
                                     <Textarea
-                                        value={currentValue}
+                                        value={tempValue}
                                         onChange={(e) => setTempValue(e.target.value)}
                                         size="sm"
                                         rows={4}
                                     />
-                                ) : (
+                                ) : isDatetime ? (
                                     <Input
-                                        value={currentValue}
+                                        type='datetime-local'
+                                        value={tempValue} // ✅ tempValue is already in local format
+                                        onChange={(e) => setTempValue(e.target.value)}
+                                        size="sm"
+                                    />
+                                ) : isSelection ? (
+                                    <select
+                                        value={tempValue}
+                                        onChange={(e) => setTempValue(e.target.value)}
+                                        style={{border:"1px solid", padding:"10px", borderRadius:"5px"}}
+                                    >
+                                        <option value="">Choose one</option>
+                                        <option value="NEW">NEW</option>
+                                        <option value="USED - LIKE NEW">USED - LIKE NEW</option>
+                                        <option value="USED - GOOD">USED - GOOD</option>
+                                        <option value="NOT WORKING">NOT WORKING</option>
+                                        <option value="BROKEN">BROKEN</option>
+                                    </select>
+                                ):(
+                                    <Input
+                                        value={tempValue}
                                         onChange={(e) => setTempValue(e.target.value)}
                                         size="sm"
                                     />
@@ -437,9 +455,9 @@ const ShopProducts: React.FC = () => {
                                     display="flex"
                                     alignItems="center"
                                     fontSize="sm"
-                                    color={currentValue ? "gray.800" : "gray.400"}
+                                    color={rawValue ? "gray.800" : "gray.400"}
                                 >
-                                    {currentValue || 'Not set'}
+                                    {displayValue} {/* ✅ Show formatted value */}
                                 </Text>
                             )}
                         </Box>
@@ -450,7 +468,7 @@ const ShopProducts: React.FC = () => {
                                     <Button
                                         colorPalette="green"
                                         size="sm"
-                                        onClick={() => handleUpdateField(product.id, fieldName)}
+                                        onClick={() => handleUpdateField(product.id, fieldName, isDatetime)}
                                         loading={isUpdating}
                                     >
                                         Save
@@ -468,7 +486,7 @@ const ShopProducts: React.FC = () => {
                                 <Button
                                     colorPalette="blue"
                                     size="sm"
-                                    onClick={() => handleEdit(product.id, fieldName, String(product[fieldName] || ''))}
+                                    onClick={() => handleEdit(product.id, fieldName, rawValue, isDatetime)}
                                     disabled={isFieldDisabled}
                                 >
                                     Update
@@ -478,10 +496,9 @@ const ShopProducts: React.FC = () => {
                     </Group>
                 </Field.Root>
             </Box>
-        )
-    }
+        );
+    };
 
-    // Render images field with multiple image management
     const renderImageField = (product: ProductProp) => {
         const isEditing = editingField?.productId === product.id && editingField?.fieldName === 'images'
         const isFieldDisabled = editingField !== null && !isEditing
@@ -493,37 +510,31 @@ const ShopProducts: React.FC = () => {
                         Product Images
                     </Field.Label>
                     
-                    {/* Display all existing images */}
                     {product.images && product.images.length > 0 && (
                         <Box mb={4}>
                             <Text fontSize="sm" mb={2}>
                                 Current Images ({product.images.length})
                             </Text>
-                            <Wrap justify={"center"}>
+                            <Wrap justify="center">
                                 {product.images
                                     .sort((a, b) => a.order - b.order)
-                                    .map((img) => {
-                                        // console.log("Image object:", img)
-                                        return (
+                                    .map((img) => (
                                         <Box
                                             key={img.id}
                                             position="relative"
                                             borderWidth="1px"
                                             rounded="md"
                                             p={2}
-                                            
-                                            
                                         >
                                             <Image
                                                 src={img.image}
                                                 alt={`Product image ${img.order}`}
                                                 height="150px"
                                                 width="180px"
-                                                fit={"fill"}
+                                                fit="fill"
                                                 rounded="md"
                                             />
                                             
-                                            {/* Primary badge */}
                                             {img.is_primary && (
                                                 <Box
                                                     position="absolute"
@@ -541,9 +552,8 @@ const ShopProducts: React.FC = () => {
                                                 </Box>
                                             )}
                                             
-                                            {/* Action buttons */}
-                                            <Group gap={"10px"} mt={2} grow>
-                                                <HStack justifyContent={"space-evenly"}>
+                                            <Group gap="10px" mt={2} grow>
+                                                <HStack justifyContent="space-evenly">
                                                     <Button
                                                         size="xs"
                                                         colorPalette="red"
@@ -567,13 +577,11 @@ const ShopProducts: React.FC = () => {
                                                 </HStack>
                                             </Group>
                                         </Box>
-                                    )
-                                    })}
+                                    ))}
                             </Wrap>
                         </Box>
                     )}
                     
-                    {/* Add new image section */}
                     <Box>
                         <Text fontSize="sm" fontWeight="semibold" mb={2}>
                             Add New Image
@@ -600,7 +608,7 @@ const ShopProducts: React.FC = () => {
                                                     src={imagePreview}
                                                     alt="New image preview"
                                                     maxH="150px"
-                                                    fit={"fill"}
+                                                    fit="fill"
                                                 />
                                             </Box>
                                         )}
@@ -672,10 +680,13 @@ const ShopProducts: React.FC = () => {
 
     return (
         <Box p={6} maxW="1200px" mx="auto">
+            <Button>
+                <Link to="/management/shop-product/add-product">Add A New Product</Link>
+            </Button>
             <Heading size="lg" mb={6}>
                 Products
             </Heading>
-            <Box mt={"20px"}>
+            <Box mt="20px">
                 {products && products.length === 0 ? (
                     <Box textAlign="center" py={10}>
                         <Text color="gray.500">No products found</Text>
@@ -708,7 +719,6 @@ const ShopProducts: React.FC = () => {
                                 </HStack>
                                 
                                 <Stack gap={4}>
-                                    {/* Basic Information */}
                                     <Text fontWeight="bold" color="gray.600" fontSize="sm" mt={2}>
                                         Basic Information
                                     </Text>
@@ -716,11 +726,26 @@ const ShopProducts: React.FC = () => {
                                     <Separator />
                                     {renderField(product, 'price', 'Price')}
                                     <Separator />
+                                    {renderField(product, 'new_price', 'Sale Price')}
+                                    <Separator />
+                                    {renderField(product, 'discount_end_at', 'Discount End Date', false, true)}
+                                    <Separator />
+                                    {renderField(product, 'currency_unit', 'Currency Unit')}
+                                    <Separator />
+                                    {renderField(product, 'condition', 'Condition', false, false, true)}
+                                    <Separator />
+                                    {renderField(product, 'color', 'Color')}
+                                    <Separator />
+                                    {renderField(product, 'dimension', 'Dimension')}
+                                    <Separator />
+                                    {renderField(product, 'weight', 'Weight')}
+                                    <Separator />
+                                    {renderField(product, 'other', 'Other')}
+                                    <Separator />
                                     {renderField(product, 'category', 'Category')}
                                     <Separator />
                                     {renderField(product, 'description', 'Description', true)}
                                     
-                                    {/* Images */}
                                     <Text fontWeight="bold" color="gray.600" fontSize="sm" mt={4}>
                                         Images
                                     </Text>

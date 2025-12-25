@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Box, Heading, Image, Text, HStack, VStack, Stack, Container, Wrap, Center, IconButton, Spinner, Badge } from "@chakra-ui/react"
+import { Box, Heading, Image, Text, HStack, VStack, Stack, Container, Wrap, Center, IconButton, Spinner, Badge, Grid, List, Strong, Collapsible } from "@chakra-ui/react"
 import { useNavigate, useParams } from "react-router"
 import api from "../../services/api"
 import NavBarShop from "@/components/shop/NavBarShop"
@@ -10,7 +10,15 @@ import { BsFillTelephoneOutboundFill } from "react-icons/bs"
 import useShop from "@/components/shop/ShopHook"
 import useProduct from "./ProductListHook"
 import { ChevronLeft, ChevronRight } from "lucide-react"
+import formatDate from "../formatDate"
+import { LuCircleCheck, LuCircleDashed } from "react-icons/lu"
+import { FaShop } from "react-icons/fa6";
+import Countdown from "../Countdown"
 
+interface CountdownTimerProps {
+  targetDate: string | null;
+  onExpire?: () => void;
+}
 interface ProductImage {
     id: string
     image: string
@@ -20,12 +28,22 @@ interface ProductImage {
 
 interface Product {
     id: string
-    name: string
-    shop_id: string
+    name: string;
+    shop_id: string;
+    description: string;
+    price: string;
+    new_price: string;
+    discount_end_at: string;
+    currency_unit: string;
+    condition: string
+    guaranty: string
+    color: string;
+    dimension: string;
+    weight: string;
+    other: string;
+    category: string;
+    discount:number
     images: ProductImage[]
-    description: string
-    price: string
-    category: string
 }
 interface OtherProduct {
     id: string
@@ -55,8 +73,7 @@ interface ShopDataProps {
     banner: string
     template: string
 }
-
-const ProductPage: React.FC = () => {
+const ProductDetailByShop: React.FC = () => {
     const Navigate = useNavigate()
     const { productId, shopId } = useParams()
     const { shops } = useShop(shopId || "")
@@ -64,6 +81,8 @@ const ProductPage: React.FC = () => {
     const [products, setProducts] = useState<Product[]>([])
     const [selectedImageId, setSelectedImageId] = useState<string>("")
     const [selectedProductId, setSelectedProductId] = useState<string>("")
+    const [isMore, setIsMore] = useState<boolean>(false)
+    const [isLess, setIsLess] = useState<boolean>(false)
 
     const [isLoading, setIsLoading] = useState<boolean>(false)
     const [error, setError] = useState<string>("")
@@ -172,345 +191,491 @@ const ProductPage: React.FC = () => {
         Navigate(`/product-page/${shopId}/${productId}`)
         setSelectedProductId(productId)
     }
+    const MoreDetail = () => {
+        setIsMore(true)
+    }
+    const LessDetail = () => {
+        setIsMore(false)
+    }
+
+    const ReturnShopHomePage = (shopId: string)=> {
+        Navigate(`/shop-page/templates/${shopId}`)
+    }
 
     return (
-        <Container p={"10px"}>
-            {/* nav and banner */}
-            <Box mb={"30px"}>
-                {shops && shops.map((shop: ShopDataProps) => (
-                    <Box key={shop.id}>
-                        <NavBarShop logo={shop.logo} name={shop.name} />
-                        <Image src={shop.banner} maxH={"200px"} w={"100%"} fit={"fill"} rounded={"5px"}/>
-                    </Box>
-                ))}
-            </Box>
-
-            <Box shadow={"2px 2px 25px 2px rgb(75, 75, 79) "} rounded={'7px'} p={"20px"}>
-            {products.length > 0 ? (
-                products.map((p: Product) => {
-                    // Sort images by order
-                    const sortedImages = [...p.images].sort((a, b) => a.order - b.order)
-                    const selectedImage = sortedImages.find(img => img.id === selectedImageId)
-
-                    return (
-                        <Wrap key={p.id} gap={'20px'}>
-                            {/* Left Side - Images */}
-                            <HStack align="start" gap={"10px"} >
-                                {sortedImages.length > 1 && (
-                                    <VStack gap={2} flexWrap="wrap" h={"500px"} justify={"space-between"}>
-                                        {sortedImages.map((image: ProductImage) => (
-                                            <Box 
-                                                key={image.id}
-                                                onClick={() => handleImageClick(image.id)}
-                                                cursor="pointer"
-                                                borderWidth="2px"
-                                                borderColor={selectedImageId === image.id ? "blue.500" : "gray.300"}
-                                                borderRadius="md"
-                                                overflow="hidden"
-                                                transition="all 0.2s"
-                                                _hover={{ borderColor: "blue.400", transform: "scale(1.05)" }}
-                                            >
-                                                <Image 
-                                                    src={image.image} 
-                                                    w="80px" 
-                                                    h="80px" 
-                                                    fit={"fill"}
-                                                />
-                                            </Box>
-                                        ))}
-                                    </VStack>
-                                )}
-                                {selectedImage && (
-                                    <Box 
-                                        borderWidth="1px" 
-                                        borderRadius="lg" 
-                                        overflow="hidden"
-                                        
-                                    >
-                                        <Image 
-                                            src={selectedImage.image} 
-                                            w="450px" 
-                                            h="500px" 
-                                            fit="fill"
-                                        />
-                                    </Box>
-                                )}
-                            </HStack>
-
-                            {/* Right Side - Product Details */}
-                            <VStack align="start" gap={4}>
-                                <Heading size="xl">{p.name}</Heading>
-                                
-                                {p.category && (
-                                    <Box 
-                                        bg="blue.100" 
-                                        color="blue.800" 
-                                        px={3} 
-                                        py={1} 
-                                        borderRadius="md"
-                                        fontSize="sm"
-                                        fontWeight="medium"
-                                    >
-                                        {p.category}
-                                    </Box>
-                                )}
-                                
-                                <Text 
-                                    fontSize="3xl" 
-                                    fontWeight="bold" 
-                                    color="green.500"
-                                >
-                                    ${p.price}
-                                </Text>
-                                
-                                <Box>
-                                    <Heading size="md" mb={2}>Description</Heading>
-                                    <Text color="gray.700" lineHeight="1.8">
-                                        {p.description}
-                                    </Text>
-                                </Box>
-                            </VStack>
-                        </Wrap>
-                    )
-                })
-            ) : (
-                <Box p={8} textAlign="center">
-                    <Text fontSize="lg" color="gray.500">No Products Found</Text>
+        <Container maxW={'1100px'} p={"10px"}>
+            <Stack>
+                {/* nav and banner */}
+                <Box mb={"30px"}>
+                    {shops && shops.map((shop: ShopDataProps) => (
+                        <Box key={shop.id} onClick={() => ReturnShopHomePage(shop.id)} cursor={"pointer"}>
+                            <NavBarShop logo={shop.logo} name={shop.name} />
+                            <Image src={shop.banner} maxH={"200px"} w={"100%"} fit={"fill"} rounded={"5px"}/>
+                        </Box>
+                    ))}
                 </Box>
-            )}
-            </Box>
-            {/* other products */}
-            <Box shadow={"2px 2px 25px 2px rgb(75, 75, 79) "} rounded={"7px"} mt={"20px"}>
-                <Heading textAlign={{base: "center", md:"start"}} p={"20px"} fontWeight={"bold"}>
-                    More Products from This Shop
-                </Heading>
-                <Wrap gap="20px" justify={{md: "space-between", base:"center"}} cursor={"pointer"}>
-                    {otherProducts.length > 0 ? (
-                        otherProducts.map((product: OtherProduct) => {
-                            const currentImage = getCurrentImageOtherProduct(product.id, product.images)
-                            const hasMultipleImages = product.images && product.images.length > 1
-                            const currentIndex = currentImageIndex[product.id] || 0
-
+    
+                <Box>
+                    {products.length > 0 ? (
+                        products.map((p: Product) => {
+                            // Sort images by order
+                            const sortedImages = [...p.images].sort((a, b) => a.order - b.order)
+                            const selectedImage = sortedImages.find(img => img.id === selectedImageId)
+        
                             return (
-                                <Box 
-                                    key={product.id}
-                                    onClick={() => handleProductClick(product.id)}
-                                    borderWidth="1px"
-                                    borderRadius="lg"
-                                    overflow="hidden"
-                                    bg="white"
-                                    shadow="md"
-                                    transition="all 0.2s"
-                                    _hover={{ shadow: "lg", transform: "translateY(-2px)" }}
-                                    w="300px"
-                                >
-                                    {/* Image Gallery */}
-                                    <Box position="relative" h="300px" bg="gray.100">
-                                        {currentImage ? (
-                                            <Image 
-                                                w="100%" 
-                                                h="100%" 
-                                                src={currentImage.image}
-                                                alt={product.name}
-                                                fit={"fill"}
-                                            />
-                                        ) : (
-                                            <Center h="100%">
-                                                <Text color="gray.500">No Image</Text>
-                                            </Center>
-                                        )}
-
-                                        {/* Navigation Arrows - Only show if multiple images */}
-                                        {hasMultipleImages && (
-                                            <>
-                                                <IconButton
-                                                    aria-label="Previous image"
-                                                    position="absolute"
-                                                    left={2}
-                                                    top="50%"
-                                                    transform="translateY(-50%)"
-                                                    onClick={(e) => handlePrevImage(e, product.id, product.images)}
-                                                    size="sm"
-                                                    colorPalette="blackAlpha"
-                                                    variant="solid"
-                                                    bg="blackAlpha.600"
-                                                    color="white"
-                                                    _hover={{ bg: "blackAlpha.800" }}
+                                <Wrap key={p.id} justify={{md: "space-between", base: "center"}} maxW={"100%"}>
+                                    {/* Left Side - Images */}
+                                    <HStack flexBasis={{base:"100%", md: "49%"}} p={"10px"} rounded={'7px'} h={{md: "520px", base:"420px"}}
+                                        shadow={"2px 2px 25px 2px rgb(75, 75, 79)"}>
+                                            {sortedImages.length > 1 && (
+                                                <VStack h={"inherit"} py={"10px"} 
+                                                    justifyContent={"space-between"} overflow="auto">
+                                                    {sortedImages.map((image: ProductImage) => (
+                                                        <Box justifyContent={"space-between"}
+                                                            key={image.id}
+                                                            onClick={() => handleImageClick(image.id)}
+                                                            cursor="pointer"
+                                                            border={"1px solid"}
+                                                            rounded={"5px"}
+                                                            transition="all 0.2s"
+                                                            _hover={{ borderColor: "blue.400", transform: "scale(1.05)" }}
+                                                        >
+                                                            <Image 
+                                                                src={image.image} 
+                                                                w="80px" 
+                                                                h="100px" 
+                                                                fit={"fill"}
+                                                            />
+                                                        </Box>
+                                                    ))}
+                                                </VStack>
+                                            )}
+                                            {selectedImage && (
+                                                <Box 
+                                                    borderWidth="1px" 
+                                                    borderRadius="lg" 
+                                                    overflow="hidden"
+                                                    py={"10px"}
+                                                    // w={"80%"}
+                                                    h={"inherit"}
                                                 >
-                                                    <ChevronLeft size={20} />
-                                                </IconButton>
-
-                                                <IconButton
-                                                    aria-label="Next image"
-                                                    position="absolute"
-                                                    right={2}
-                                                    top="50%"
-                                                    transform="translateY(-50%)"
-                                                    onClick={(e) => handleNextImage(e, product.id, product.images)}
-                                                    size="sm"
-                                                    colorPalette="blackAlpha"
-                                                    variant="solid"
-                                                    bg="blackAlpha.600"
-                                                    color="white"
-                                                    _hover={{ bg: "blackAlpha.800" }}
-                                                >
-                                                    <ChevronRight size={20} />
-                                                </IconButton>
-                                            </>
-                                        )}
-
-                                        {/* Image Counter */}
-                                        {hasMultipleImages && (
-                                            <Box
-                                                position="absolute"
-                                                top={2}
-                                                right={2}
-                                                bg="blackAlpha.700"
-                                                color="white"
-                                                px={2}
-                                                py={1}
-                                                borderRadius="md"
-                                                fontSize="sm"
-                                            >
-                                                {currentIndex + 1} / {product.images.length}
-                                            </Box>
-                                        )}
-
-                                        {/* Primary Badge */}
-                                        {currentImage?.is_primary && (
-                                            <Badge
-                                                position="absolute"
-                                                top={2}
-                                                left={2}
-                                                colorPalette="blue"
-                                            >
-                                                Primary
-                                            </Badge>
-                                        )}
-
-                                        {/* Dot Indicators */}
-                                        {hasMultipleImages && (
-                                            <HStack
-                                                position="absolute"
-                                                bottom={2}
-                                                left="50%"
-                                                transform="translateX(-50%)"
-                                                gap={2}
-                                            >
-                                                {product.images.map((_, idx) => (
-                                                    <Box
-                                                        key={idx}
-                                                        w="8px"
-                                                        h="8px"
-                                                        borderRadius="full"
-                                                        bg={currentIndex === idx ? "white" : "whiteAlpha.500"}
-                                                        cursor="pointer"
-                                                        transition="all 0.2s"
-                                                        onClick={() => handleDotClick(product.id, idx)}
-                                                        _hover={{ 
-                                                            bg: currentIndex === idx ? "white" : "whiteAlpha.700",
-                                                            transform: "scale(1.2)"
-                                                        }}
+                                                    <Image 
+                                                        src={selectedImage.image} 
+                                                        w={{md:"400px", base:"300px"}}
+                                                        h={{md:"500px", base: "400px"}}
+                                                        fit="fill"
                                                     />
-                                                ))}
-                                            </HStack>
-                                        )}
-                                    </Box>
-                                    
-                                    {/* Product Details */}
-                                    <Box p={4}>
-                                        <Heading size="md" mb={2}>
-                                            {product.name}
+                                                </Box>
+                                            )}
+                                        
+                                    </HStack>
+                                    {/* Right Side - Product Details */}
+                                    <VStack align="start" gap={"10px"} flexBasis={{base:"100%", md: "50%"}} h={{md: "520px", base:"420px"}}
+                                        shadow={"2px 2px 25px 2px rgb(75, 75, 79) "} rounded={'7px'} p={"20px"}>
+                                        <Heading fontSize={"24px"} fontWeight={"bold"}>
+                                            {p.name}
                                         </Heading>
-                                        
-                                        {product.category && (
-                                            <Text 
-                                                fontSize="sm" 
-                                                color="gray.600" 
-                                                mb={2}
-                                                fontWeight="medium"
-                                            >
-                                                {product.category}
+                                        <List.Root gap={2} variant={"plain"}>
+                                            <List.Item>
+                                                <HStack>
+                                                    <Box color={"red"}>
+                                                        <FaShop/>
+                                                    </Box>
+                                                    <Collapsible.Root>
+                                                        <Collapsible.Trigger
+                                                            fontSize={"18px"}
+                                                            cursor={"pointer"} 
+                                                            transition="all 0.2s"
+                                                            _hover={{ borderColor: "blue.400", transform: "scale(1.05)", color:"red" }}  
+                                                            color={"black.200"}
+                                                        >
+                                                            Click for Shop's contact details
+                                                        </Collapsible.Trigger>
+                                                        <Collapsible.Content>
+                                                            <Box>
+                                                                {shops && shops.map((shop: ShopDataProps) => (
+                                                                    <Box key={shop.id} border={"1px solid"} rounded={"5px"}>
+                                                                        <Stack p="10px" rounded="5px" w={{ base: "100%", md: "fit-content" }}minW="250px">
+                                                                            <HStack>
+                                                                                <GiShop />
+                                                                                <Text 
+                                                                                    onClick={() => openGoogleMaps(shop.address)} 
+                                                                                    cursor="pointer"
+                                                                                    fontSize="sm"
+                                                                                    _hover={{ textDecoration: "underline", color: "blue.500" }}
+                                                                                >
+                                                                                    {shop.address}
+                                                                                </Text>
+                                                                                </HStack>
+                                                                                <HStack>
+                                                                                <MdEmail />
+                                                                                <a 
+                                                                                    href={`mailto:${shop.email}`}
+                                                                                    style={{ fontSize: '14px', color: 'inherit' }}
+                                                                                >
+                                                                                    {shop.email}
+                                                                                </a>
+                                                                                </HStack>
+                                                                                <HStack>
+                                                                                <BsFillTelephoneOutboundFill />
+                                                                                <a 
+                                                                                    href={`tel:${shop.phone}`}
+                                                                                    style={{ fontSize: '14px', color: 'blue' }}
+                                                                                >
+                                                                                    {shop.phone}
+                                                                                </a>
+                                                                            </HStack>
+                                                                        </Stack>
+                                                                    </Box>
+                                                                ))}
+                                                            </Box>                            
+                                                        </Collapsible.Content>
+                                                    </Collapsible.Root>
+                                                </HStack>
+                                            </List.Item>
+                                        </List.Root> 
+                                        {parseFloat(p.new_price) > 0 ? (
+                                            <List.Root gap={2} variant={"plain"} align={"center"}>
+                                                <List.Item>
+                                                    <HStack fontSize="18px" fontWeight="bold" color="blue.500">
+                                                        <List.Indicator asChild color="green.500"><LuCircleCheck /></List.Indicator>
+                                                        <Text>
+                                                            Price: {p.new_price}
+                                                        </Text>
+                                                        <Text>{p.currency_unit}</Text>
+                                                    </HStack>
+                                                </List.Item>
+                                                <List.Item>
+                                                    <List.Indicator asChild color="green.500"><LuCircleCheck /></List.Indicator>
+                                                    <Text textDecor={"line-through"} fontWeight={"bold"}>Normal Price: {p.price} €</Text>
+                                                </List.Item>
+                                                <List.Item>
+                                                    <List.Indicator asChild color="green.500"><LuCircleCheck /></List.Indicator>
+                                                    <Text fontWeight={"bold"} color={"red.700"}>Save: {p.discount} €</Text>   
+                                                </List.Item>                            
+                                                <List.Item>
+                                                    <List.Indicator asChild color="green.500"><LuCircleCheck /></List.Indicator>
+                                                    <Text fontStyle={"italic"}>Valid to: {formatDate(p.discount_end_at)}</Text>   
+                                                </List.Item>
+                                                <List.Item>
+                                                    <List.Indicator asChild color="green.500"><LuCircleCheck /></List.Indicator> 
+                                                    <HStack gap={"20px"}>
+                                                        <Text>Remain Time: </Text>
+                                                        <Countdown targetDate={p.discount_end_at} onExpire={fetchProductList}/>
+                                                    </HStack>
+                                                       
+                                                </List.Item>
+                                            </List.Root>                       
+                                        ):(
+                                            <List.Root>
+                                                <List.Item>
+                                                    <HStack fontSize="18px" fontWeight="bold" color="blue.500">
+                                                        <List.Indicator asChild color="green.500"><LuCircleCheck /></List.Indicator>
+                                                        <Text>Price: {p.price}</Text>
+                                                        <Text>{p.currency_unit}</Text>
+                                                    </HStack>
+                                                </List.Item>
+                                            </List.Root>
+                                        )}  
+                                                                    
+                                        <Box w={"100%"} >
+                                            <Heading fontSize="18px" mb={"10px"} textDecor={"underline"}>Description: </Heading>
+                                            <List.Root h={"fit-content"} w={"100%"} pl={"20px"} variant={"plain"}>
+                                                {p.condition && 
+                                                    <List.Item>
+                                                        <List.Indicator asChild color="green.500"><LuCircleCheck /></List.Indicator>
+                                                        Condition: <Strong px={"10px"}>{p.condition}</Strong>
+                                                    </List.Item>
+                                                }
+                                                {p.guaranty && 
+                                                    <List.Item>
+                                                        <List.Indicator asChild color="green.500"><LuCircleCheck /></List.Indicator>
+                                                        Guaranty: <Strong px={"10px"}>{p.guaranty}</Strong>
+                                                    </List.Item>
+                                                }
+                                                {p.color && 
+                                                    <List.Item>
+                                                        <List.Indicator asChild color="green.500"><LuCircleCheck /></List.Indicator>
+                                                        Color: <Strong px={"10px"}>{p.color}</Strong>
+                                                    </List.Item>
+                                                }
+                                                {p.weight && 
+                                                    <List.Item>
+                                                        <List.Indicator asChild color="green.500"><LuCircleCheck /></List.Indicator>
+                                                        Weight: <Strong px={"10px"}>{p.weight}</Strong>
+                                                    </List.Item>
+                                                }
+                                                {p.dimension && 
+                                                    <List.Item>
+                                                        <List.Indicator asChild color="green.500"><LuCircleCheck /></List.Indicator>
+                                                        Dimensions: <Strong px={"10px"}>{p.dimension}</Strong>
+                                                    </List.Item>
+                                                }
+                                                {p.other && 
+                                                    <List.Item>
+                                                        <List.Indicator asChild color="green.500"><LuCircleCheck /></List.Indicator>
+                                                        Others: <Strong px={"10px"}>{p.other}</Strong>
+                                                    </List.Item>
+                                                }
+                                                {/* {p.description && 
+                                                    <List.Item overflow={"hidden"} h={"50px"}>
+                                                        <List.Indicator asChild color="green.500"><LuCircleCheck/></List.Indicator>
+                                                        {p.description}
+                                                    </List.Item>
+                                                } */}
+                                            </List.Root>
+                                        </Box>
+                                        <Text onClick={MoreDetail} cursor={"pointer"} fontStyle={"italic"} fontWeight={"bold"}>more details ...</Text>
+                                    </VStack>
+                                    {isMore && (
+                                        <HStack p={"20px"} shadow={"2px 2px 25px 2px rgb(75, 75, 79) "} rounded={"7px"}>
+                                            <Text textAlign={"justify"}>
+                                                {p.description}
+                                                <Text onClick={LessDetail} cursor={"pointer"} fontWeight={"bold"}>less details</Text>
                                             </Text>
-                                        )}
-                                        
-                                        {product.description && (
-                                            <Text 
-                                                fontSize="sm" 
-                                                color="gray.700" 
-                                                mb={3}
                                             
-                                            >
-                                                {product.description}
-                                            </Text>
-                                        )}
-                                        
-                                        <Text 
-                                            fontSize="xl" 
-                                            fontWeight="bold" 
-                                            color="blue.600"
-                                        >
-                                            ${parseFloat(product.price).toFixed(2)}
-                                        </Text>
-                                    </Box>
-                                </Box>
+                                        </HStack>
+                                    )}
+                                </Wrap>
+                                
                             )
                         })
                     ) : (
-                        <Center w="full" h="400px">
-                            <Box textAlign="center">
-                                <Text fontSize="lg" color="gray.600" mb={2}>
-                                    No Products Yet
-                                </Text>
-                                <Text fontSize="sm" color="gray.500">
-                                    Add your first product to get started
-                                </Text>
-                            </Box>
-                        </Center>
+                        <Box p={8} textAlign="center">
+                            <Text fontSize="lg" color="gray.500">No Products Found</Text>
+                        </Box>
                     )}
-                </Wrap>
-            </Box>
-            {/* Footer */}
-            <Box h={"100px"} borderTop={"2px solid"} mt={"20px"}>
-                {shops && shops.map((shop: ShopDataProps) => (
-                    <Box key={shop.id}>
-                        <Stack p="10px" rounded="5px" w={{ base: "100%", md: "fit-content" }}minW="250px">
-                            <HStack>
-                                <GiShop />
-                                <Text 
-                                    onClick={() => openGoogleMaps(shop.address)} 
-                                    cursor="pointer"
-                                    fontSize="sm"
-                                    _hover={{ textDecoration: "underline", color: "blue.500" }}
-                                >
-                                    {shop.address}
-                                </Text>
-                                </HStack>
+                </Box>
+                {/* other products */}
+                <Box shadow={"2px 2px 25px 2px rgb(75, 75, 79) "} rounded={"7px"} p={"10px"}> 
+                    <Heading textAlign={{base: "center", md:"start"}} p={"20px"} fontWeight={"bold"}>
+                        More Products from This Shop
+                    </Heading>
+                    <Wrap gap={"20px"} 
+                        justify={{md: "space-between", base:"center"}} cursor={"pointer"}>
+                        {otherProducts.length > 0 ? (
+                            otherProducts.map((product: OtherProduct) => {
+                                const currentImage = getCurrentImageOtherProduct(product.id, product.images)
+                                const hasMultipleImages = product.images && product.images.length > 1
+                                const currentIndex = currentImageIndex[product.id] || 0
+    
+                                return (
+                                    <Box 
+                                        key={product.id}
+                                        onClick={() => handleProductClick(product.id)}
+                                        border="1px solid"
+                                        rounded="5px"
+                                        overflow="hidden"
+                                        shadow="md"
+                                        transition="all 0.2s"
+                                        _hover={{ shadow: "lg", transform: "translateY(-2px)" }}
+                                        w={{base:"100%", md: "250px"}}
+                                    >
+                                        {/* Image Gallery */}
+                                        <Box position="relative">
+                                            {currentImage ? (
+                                                <Image 
+                                                    w="100%" 
+                                                    h="100%" 
+                                                    src={currentImage.image}
+                                                    alt={product.name}
+                                                    fit={"fill"}
+                                                />
+                                            ) : (
+                                                <Center h="100%">
+                                                    <Text color="gray.500">No Image</Text>
+                                                </Center>
+                                            )}
+    
+                                            {/* Navigation Arrows - Only show if multiple images */}
+                                            {hasMultipleImages && (
+                                                <>
+                                                    <IconButton
+                                                        aria-label="Previous image"
+                                                        position="absolute"
+                                                        left={2}
+                                                        top="50%"
+                                                        transform="translateY(-50%)"
+                                                        onClick={(e) => handlePrevImage(e, product.id, product.images)}
+                                                        size="sm"
+                                                        colorPalette="blackAlpha"
+                                                        variant="solid"
+                                                        bg="blackAlpha.600"
+                                                        color="white"
+                                                        _hover={{ bg: "blackAlpha.800" }}
+                                                    >
+                                                        <ChevronLeft size={20} />
+                                                    </IconButton>
+    
+                                                    <IconButton
+                                                        aria-label="Next image"
+                                                        position="absolute"
+                                                        right={2}
+                                                        top="50%"
+                                                        transform="translateY(-50%)"
+                                                        onClick={(e) => handleNextImage(e, product.id, product.images)}
+                                                        size="sm"
+                                                        colorPalette="blackAlpha"
+                                                        variant="solid"
+                                                        bg="blackAlpha.600"
+                                                        color="white"
+                                                        _hover={{ bg: "blackAlpha.800" }}
+                                                    >
+                                                        <ChevronRight size={20} />
+                                                    </IconButton>
+                                                </>
+                                            )}
+    
+                                            {/* Image Counter */}
+                                            {hasMultipleImages && (
+                                                <Box
+                                                    position="absolute"
+                                                    top={2}
+                                                    right={2}
+                                                    bg="blackAlpha.700"
+                                                    color="white"
+                                                    px={2}
+                                                    py={1}
+                                                    borderRadius="md"
+                                                    fontSize="sm"
+                                                >
+                                                    {currentIndex + 1} / {product.images.length}
+                                                </Box>
+                                            )}
+    
+                                            {/* Primary Badge */}
+                                            {currentImage?.is_primary && (
+                                                <Badge
+                                                    position="absolute"
+                                                    top={2}
+                                                    left={2}
+                                                    colorPalette="blue"
+                                                >
+                                                    Primary
+                                                </Badge>
+                                            )}
+    
+                                            {/* Dot Indicators */}
+                                            {hasMultipleImages && (
+                                                <HStack
+                                                    position="absolute"
+                                                    bottom={2}
+                                                    left="50%"
+                                                    transform="translateX(-50%)"
+                                                    gap={2}
+                                                >
+                                                    {product.images.map((_, idx) => (
+                                                        <Box
+                                                            key={idx}
+                                                            w="8px"
+                                                            h="8px"
+                                                            borderRadius="full"
+                                                            bg={currentIndex === idx ? "white" : "whiteAlpha.500"}
+                                                            cursor="pointer"
+                                                            transition="all 0.2s"
+                                                            onClick={() => handleDotClick(product.id, idx)}
+                                                            _hover={{ 
+                                                                bg: currentIndex === idx ? "white" : "whiteAlpha.700",
+                                                                transform: "scale(1.2)"
+                                                            }}
+                                                        />
+                                                    ))}
+                                                </HStack>
+                                            )}
+                                        </Box>
+                                        
+                                        {/* Product Details */}
+                                        <Box p={4}>
+                                            <Heading size="md" mb={2}>
+                                                {product.name}
+                                            </Heading>
+                                            
+                                            {product.category && (
+                                                <Text 
+                                                    fontSize="sm" 
+                                                    color="gray.600" 
+                                                    mb={2}
+                                                    fontWeight="medium"
+                                                >
+                                                    {product.category}
+                                                </Text>
+                                            )}
+                                            
+                                            {product.description && (
+                                                <Text 
+                                                    fontSize="sm" 
+                                                    color="gray.700" 
+                                                    mb={3}
+                                                
+                                                >
+                                                    {product.description}
+                                                </Text>
+                                            )}
+                                            
+                                            <Text 
+                                                fontSize="xl" 
+                                                fontWeight="bold" 
+                                                color="blue.600"
+                                            >
+                                                ${parseFloat(product.price).toFixed(2)}
+                                            </Text>
+                                        </Box>
+                                    </Box>
+                                )
+                            })
+                        ) : (
+                            <Center w="full" h="400px">
+                                <Box textAlign="center">
+                                    <Text fontSize="lg" color="gray.600" mb={2}>
+                                        No More Products Yet
+                                    </Text>
+                                </Box>
+                            </Center>
+                        )}
+                    </Wrap>
+                </Box>
+                {/* Footer */}
+                <Box h={"100px"} borderTop={"2px solid"} mt={"20px"}>
+                    {shops && shops.map((shop: ShopDataProps) => (
+                        <Box key={shop.id}>
+                            <Stack p="10px" rounded="5px" w={{ base: "100%", md: "fit-content" }}minW="250px">
                                 <HStack>
-                                <MdEmail />
-                                <a 
-                                    href={`mailto:${shop.email}`}
-                                    style={{ fontSize: '14px', color: 'inherit' }}
-                                >
-                                    {shop.email}
-                                </a>
+                                    <GiShop />
+                                    <Text 
+                                        onClick={() => openGoogleMaps(shop.address)} 
+                                        cursor="pointer"
+                                        fontSize="sm"
+                                        _hover={{ textDecoration: "underline", color: "blue.500" }}
+                                    >
+                                        {shop.address}
+                                    </Text>
+                                    </HStack>
+                                    <HStack>
+                                    <MdEmail />
+                                    <a 
+                                        href={`mailto:${shop.email}`}
+                                        style={{ fontSize: '14px', color: 'inherit' }}
+                                    >
+                                        {shop.email}
+                                    </a>
+                                    </HStack>
+                                    <HStack>
+                                    <BsFillTelephoneOutboundFill />
+                                    <a 
+                                        href={`tel:${shop.phone}`}
+                                        style={{ fontSize: '14px', color: 'blue' }}
+                                    >
+                                        {shop.phone}
+                                    </a>
                                 </HStack>
-                                <HStack>
-                                <BsFillTelephoneOutboundFill />
-                                <a 
-                                    href={`tel:${shop.phone}`}
-                                    style={{ fontSize: '14px', color: 'blue' }}
-                                >
-                                    {shop.phone}
-                                </a>
-                            </HStack>
-                        </Stack>
-                    </Box>
-                ))}
-                
-            </Box>
+                            </Stack>
+                        </Box>
+                    ))}
+                    
+                </Box>
+            </Stack>
         </Container>
     )
 }
 
-export default ProductPage
+export default ProductDetailByShop

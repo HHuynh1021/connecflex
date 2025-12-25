@@ -3,6 +3,7 @@ import os
 from datetime import timedelta
 import environ #type:ignore
 import certifi  # type: ignore
+from celery.schedules import crontab
 
 env = environ.Env()
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -28,6 +29,12 @@ CORS_ALLOWED_ORIGINS = env.list(
 )
 
 
+# CELERY_BEAT_SCHEDULE = {
+#     'clear-expired-discounts': {
+#         'task': 'shops.tasks.clear_expired_discounts',
+#         'schedule': crontab(minute='*/15'),  # Every 15 minutes
+#     },
+# }
 # Application definition
 
 INSTALLED_APPS = [

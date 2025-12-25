@@ -17,6 +17,7 @@ interface Product {
     description: string
     price: string
     category: string
+    address: string
 }
 const useProductList = () => {
     const [products, setProducts] = useState<Product[]>([])

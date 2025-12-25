@@ -1,5 +1,5 @@
 // ProductCard.tsx
-import { Box, Image, Text, VStack, Badge, HStack } from "@chakra-ui/react"
+import { Box, Image, Text, VStack, Badge, HStack, List, Stack, Avatar, Heading } from "@chakra-ui/react"
 
 interface ProductImage {
     id: string
@@ -16,6 +16,9 @@ interface Product {
     description: string
     price: string
     category: string
+    new_price: string
+    discount_end_at: string
+    currency_unit: string
 }
 
 interface ProductCardProps {
@@ -35,37 +38,38 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             shadow="md"
             _hover={{ shadow: "xl" }}
             transition="all 0.3s"
-            w={'300px'}
-            h={"500px"}
+            
+            w={'200px'}
+            h={"300px"}
+            p={"10px"}
         >
-            <Image
-                src={imageUrl}
-                alt={product.name}
-                h="400px"
-                w="300px"
-                fit={"fill"}
-            />
-
-            <VStack align="stretch" p={4} gap={"10px"}>
-                <Text fontSize="lg" fontWeight="bold">
-                    {product.name}
-                </Text>
-
-                {/* <Text fontSize="16px">
-                    {product.description}
-                </Text> */}
-
-                <HStack justify="space-between" align="center">
-                    <Text fontSize="20px" fontWeight="bold" color="blue.600">
-                        ${product.price}
-                    </Text>
-                    {/* {product.category && (
-                        <Badge colorScheme="purple" fontSize="xs">
-                            {product.category}
-                        </Badge>
-                    )} */}
-                </HStack>
-            </VStack>
+            <Box position={"relative"}>
+                <Image
+                    src={imageUrl}
+                    alt={product.name}
+                    h="200px"
+                    w="180px"
+                    fit={"fill"}
+                />
+                <Heading fontSize={"22px"}>{product.name}</Heading>
+                {(parseFloat(product.new_price) > 0) ? (
+                    <Box>
+                        <Avatar.Root position={"absolute"} top={0} right={0}>
+                            <Avatar.Image src="https://img.icons8.com/color/48/discount--v1.png"/>
+                        </Avatar.Root>
+                        <HStack fontWeight={"bold"} color={"red"}>
+                            <Text>Price: {product.new_price}</Text>
+                            <Text>{product.currency_unit}</Text>
+                        </HStack>
+                        <Text fontSize={"14px"} fontWeight={"bold"} textDecor={"line-through"}>Normal Price: {product.price} €</Text>
+                    </Box>
+                ):(
+                    <HStack fontWeight={"bold"}>
+                        <Text>Price: {product.price}</Text>
+                        <Text>{product.currency_unit}</Text>
+                    </HStack>
+                )}
+            </Box>
         </Box>
     )
 }
