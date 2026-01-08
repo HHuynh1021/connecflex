@@ -26,7 +26,7 @@ const useShop = (shopId: string) => {
     const fetchShopData = async () => {
         setLoading(true)
         try {
-            const url = `${import.meta.env.VITE_API_BASE_URL}/shops/shop-list-view/`
+            const url = '/shops/shop-list-view/'
             const response = await api.get(url)
             const shopdata = Array.isArray(response.data[0]) ? response.data[0] : response.data
             const filter = shopdata.filter((s: ShopDataProps) => s.id === shopId)
@@ -39,7 +39,7 @@ const useShop = (shopId: string) => {
     }
     useEffect(() => {
         fetchShopData()
-    },[])
+    },[shopId])
   return { shops, isLoading }
 }
 

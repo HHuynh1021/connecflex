@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import type { FormEvent, ChangeEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router";
 import { useDispatch, useSelector } from 'react-redux';
-import { login, reset } from '../services/authSlice';
+import { login, getUserInfo, reset } from '../services/authSlice';
 import type { AppDispatch } from '../services/store';
 import { Center, Button, Container, Box, Heading, Input, Text, VStack } from "@chakra-ui/react";
 import { PasswordInput } from "../components/ui/password-input";
@@ -15,16 +15,17 @@ interface FormData {
 interface RootState {
   auth: {
     user: any;
+    userInfo: any;
     isError: boolean;
     isSuccess: boolean;
     isLoading: boolean;
     message: string;
-    accessToken: string
+    token: string;
   };
 }
 
 const Login = () => {
-  const { user, isError, isSuccess, isLoading, message, accessToken } = useSelector((state: RootState) => state.auth);
+  const { user, userInfo, isError, isSuccess, isLoading, message, token } = useSelector((state: RootState) => state.auth);
   
   const [formData, setFormData] = useState<FormData>({
     email: "",
@@ -36,6 +37,7 @@ const Login = () => {
   
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
+  const location = useLocation()
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({
@@ -44,10 +46,8 @@ const Login = () => {
     }));
   };
 
-  // Change to handle form submit instead of button click
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
     setError('');
     
     const userData = {
@@ -55,27 +55,46 @@ const Login = () => {
       password,
     };
     
-    dispatch(login(userData as any));
+    console.log('🔐 Submitting login...');
+    dispatch(login(userData));
   };
 
+  // Effect to fetch user info after successful login
   useEffect(() => {
-    if (accessToken) {
-      navigate("/management");
+    if (isSuccess && user && user.access && !userInfo && !isLoading) {
+      console.log('✅ Login successful, fetching user info...');
+      dispatch(getUserInfo());
     }
-  }, [accessToken, navigate]);
+  }, [isSuccess, user, userInfo, isLoading, dispatch]);
 
+  // Effect to navigate after user info is loaded
+  useEffect(() => {
+    if (userInfo) {
+      // console.log('👤 User info loaded:', userInfo);
+      
+      if (userInfo.role === 'shop_admin') {
+        navigate("/management");
+      } 
+      else if (userInfo.role === 'guest_user'){
+        const from = location.state?.from?.pathname || '/';
+        navigate(from, { replace: true });
+      }
+      else {
+        setError('Access denied. Cannot find the account');
+      }
+      
+      dispatch(reset());
+    }
+  }, [userInfo, navigate, dispatch]);
+
+  // Effect to handle errors
   useEffect(() => {
     if (isError) {
+      console.error('❌ Login error:', message);
       setError(message || 'Invalid email or password');
       dispatch(reset());
     }
-    
-    if (isSuccess && user) {
-      // Skip getUserInfo if not needed
-      navigate("/management");
-      dispatch(reset());
-    }
-  }, [isError, isSuccess, user, message, navigate, dispatch]);
+  }, [isError, message, dispatch]);
 
   return (
     <Container maxW="1140px">
@@ -98,7 +117,6 @@ const Login = () => {
             </Box>
           )}
       
-          {/* KEY CHANGE: Use actual <form> element */}
           <form onSubmit={handleSubmit} style={{ width: '100%' }}>
             <VStack p={4} rounded={8} w="100%">
               <Input
@@ -128,10 +146,10 @@ const Login = () => {
               <Button 
                 type="submit"
                 w="100%"
-                isLoading={isLoading}
-                loadingText="Logging in..."
+                loading={isLoading}
+                disabled={isLoading}
               >
-                Login
+                {isLoading ? 'Logging in...' : 'Login'}
               </Button>
             </VStack>
           </form>
@@ -142,6 +160,9 @@ const Login = () => {
           
           <Text>
             Don't have an account? <Link to="/register">Sign Up</Link>
+          </Text>
+          <Text>
+            <Link to="/">Join as GUEST</Link>
           </Text>
         </VStack>
       </Center>

@@ -11,15 +11,22 @@ const GET_USER_INFO = `${API_BASE_URL}/auth/users/me/`
 
 
 interface RegisterShopDataProp {
-  name: string
-  email: string
-  password: string
+  shop_name: string;
+  role: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  password: string;
+  re_password: string
 }
 interface ShopDataProp {
   id: string
-  name: string
-  email: string
-  password: string
+  shop_name: string;
+  role: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+
 }
 interface AccessTokenProp {
   token: string

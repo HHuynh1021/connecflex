@@ -1,9 +1,8 @@
 import { BrowserRouter, Routes, Route } from "react-router"
-import Login from "./auths/Login"
 import Dashboard from "./publicPages/Dashboard"
 import PrivateRoute from "./services/PrivateRoute"
 import ShopAdmin from "./adminPages/ShopAdmin"
-import ShopPage from "./publicPages/ShopDetailPage"
+import ShopDetailPage from "./publicPages/ShopDetailPage"
 import ShopInfo from "./adminPages/ShopInfo"
 import Register from "./auths/Register"
 import ResetPassword from "./auths/ResetPassword"
@@ -15,6 +14,8 @@ import ProductDetailByShop from "./components/products/ProductDetailByShop"
 import ShopProducts from "./adminPages/ShopProducts"
 import ProductListPage from "./publicPages/ProductListPage"
 import HomePage from "./publicPages/HomePage"
+import LoginPage from "./auths/LoginPage"
+import OrderList from "./adminPages/OrderList"
 
 function App() {
 
@@ -27,12 +28,13 @@ function App() {
           <Route path="/home" element={<HomePage/>}/>
           <Route path="/home/shop-list" element={<ShopListPage/>}/>
           <Route path="/home/product-list/" element={<ProductListPage/>}/>
+          <Route path="/shop-page/templates/:shopId" element={<ShopDetailPage/>}/>
+          <Route path="/product-page/:shopId/:productId" element={<ProductDetailByShop/>}/>
+          
         </Route>
-        <Route path="/shop-page/templates/:shopId" element={<ShopPage/>}/>
-        <Route path="/product-page/:shopId/:productId" element={<ProductDetailByShop/>}/>
 
         {/* auth paths */}
-        <Route path="/login" element={<Login/>}/>
+        <Route path="/login" element={<LoginPage/>}/>
         <Route path="/register" element={<Register/>}/>
         <Route path="/reset-password" element={<ResetPassword/>}/>
         <Route path="/activate/:uid/:token" element={<Activate/>} />
@@ -43,6 +45,7 @@ function App() {
           <Route path="/management/shop-info" element={<ShopInfo/>}/>
           <Route path="/management/shop-product/add-product" element={<AddProducts/>}/>
           <Route path="/management/shop-product" element={<ShopProducts/>}/>
+          <Route path="/management/order-list" element={<OrderList/>}/>
         </Route>
       </Routes>
     </BrowserRouter>

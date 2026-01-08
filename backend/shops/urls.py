@@ -16,4 +16,8 @@ urlpatterns = [
     path('shops/product-image-view/', views.ProductImageListView.as_view(), name='product-image-view'),
     path('shops/product-image-create/', views.ProductImageCreateView.as_view(), name='product-image-view'),
     path('shops/product-image-editor/<str:pk>/', views.ProductImageEditorView.as_view(), name='product-image-view'),
+    #order url
+    path('shops/order-list-view/', views.OrderListView.as_view(), name='order-list-view'),
+    path('shops/order-create/', views.OrderCreateView.as_view(), name='order-list-view'),
+    path('shops/order-editor/<str:pk>/', views.OrderEditorView.as_view(), name='order-list-view'),
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

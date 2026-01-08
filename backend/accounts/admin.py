@@ -3,7 +3,7 @@ from django.contrib.admin import AdminSite
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin, GroupAdmin
 from django.contrib.auth.models import Group
 from rest_framework.authtoken.models import Token
-from .models import User, Member
+from .models import User
 from django.utils.translation import gettext_lazy as _
 
 
@@ -16,10 +16,10 @@ admin.site = CustomAdminSite()
 class UserAdmin(BaseUserAdmin):
     ordering = ["email"]
     model = User
-    list_display = ["name","email", "is_staff", "is_active"]
+    list_display = ["role","first_name", "last_name","email", "is_staff", "is_active"]
     list_display_links = ["email"]
-    list_filter = ["name", "email", "is_staff", "is_active"]
-    search_fields = ["name", "email"]
+    list_filter =  ["email", "is_active"]
+    search_fields = ["first_name", "last_name", "email"]
     fieldsets = (
         (
             _("Login Credentials"), {
@@ -29,7 +29,7 @@ class UserAdmin(BaseUserAdmin):
         (
             _("Personal Information"),
             {
-                "fields": ('name',)
+                "fields": ('first_name', 'last_name')
             },
         ),
         (
@@ -48,10 +48,10 @@ class UserAdmin(BaseUserAdmin):
     add_fieldsets = (
         (None, {
             "classes": ("wide",),
-            "fields": ( "name", "email", "password1", "password2", "is_staff", "is_active",),
+            "fields": ( "role", "first_name", "last_name", "email", "password1", "password2", "is_staff", "is_active",),
         },),
     )
+
 admin.site.register(User, UserAdmin)
 admin.site.register(Group, GroupAdmin)
 admin.site.register(Token)
-admin.site.register(Member)

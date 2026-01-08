@@ -23,7 +23,7 @@ interface ShopDataProps {
     banner: string;
     template: string;
 }
-const ShopPage:React.FC = () => {
+const ShopDetailPage:React.FC = () => {
   const Navigate = useNavigate()
   const {shopId} = useParams()
   const user = useSelector((state: any) => state.auth.user)
@@ -59,4 +59,4 @@ const ShopPage:React.FC = () => {
   )
 }
 
-export default ShopPage
+export default ShopDetailPage

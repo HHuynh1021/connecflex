@@ -53,7 +53,7 @@ const AddProducts: React.FC = () => {
             dispatch(getUserInfo(undefined))
         }
     }, [dispatch, user, userInfo])
-    // console.log("userInfo: ", userInfo)
+    console.log("userInfo: ", userInfo)
 
     // Form data
     const [formData, setFormData] = useState<ProductFormData>({
@@ -336,7 +336,7 @@ const AddProducts: React.FC = () => {
 
             // Wait for all images to upload
             await Promise.all(imageUploadPromises)
-            console.log(`All ${images.length} images uploaded successfully`)
+            // console.log(`All ${images.length} images uploaded successfully`)
 
             toaster.create({
                 title: 'Success',
@@ -380,7 +380,7 @@ const AddProducts: React.FC = () => {
     }
 
     return (
-        <Container maxW="800px" py={8}>
+        <Box maxW="100%" py={8}>
             <Box bg="white" p={8} borderRadius="lg" shadow="md">
                 <Heading size="lg" mb={6}>Add New Product</Heading>
 
@@ -724,7 +724,7 @@ const AddProducts: React.FC = () => {
                     </Stack>
                 </form>
             </Box>
-        </Container>
+        </Box>
     )
 }
 

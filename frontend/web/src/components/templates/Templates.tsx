@@ -1,15 +1,14 @@
-import { useState } from 'react'
+// import { useState } from 'react'
 import useShop from '../shop/ShopHook'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { GiShop } from "react-icons/gi"
 import { MdEmail } from "react-icons/md"
 import { BsFillTelephoneOutboundFill } from "react-icons/bs"
-import NavBarShop from '../shop/NavBarShop'
+// import NavBarShop from '../shop/NavBarShop'
 import ProductListShop from '@/components/products/ProductListShop'
 import useProduct from '../products/ProductHook'
 import ProductCard from '../products/ProductCard'
-import { Avatar, Box, Button, Center, Container, Grid, GridItem, Heading, HStack, Icon, Image, List, 
-  Stack, Text, VStack, Wrap, WrapItem } from '@chakra-ui/react'
+import { Avatar, Box, Container, Heading, HStack, Image, Stack, Text, Wrap, } from '@chakra-ui/react'
 
 interface ShopDataProps {
   id: string
@@ -76,7 +75,12 @@ const Templates: React.FC = () => {
       <Box>
         {shops && shops.map((shop: ShopDataProps) => (
           <Stack key={shop.id} gap={4}>
-            <NavBarShop logo={shop.logo} name={shop.name} />
+            <HStack>
+              <Avatar.Root>
+                <Avatar.Image src={shop.logo}/>
+              </Avatar.Root>
+              <Heading>{shop.name}</Heading>
+            </HStack>
             
             {shop.template === "Template-1" ? (
               <Box>

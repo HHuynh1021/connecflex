@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react"
-import { Box, Heading, Image, Text, HStack, VStack, Stack, Container, Wrap, Center, IconButton, Spinner, Badge, Grid, List, Strong, Collapsible } from "@chakra-ui/react"
+import { Box, Heading, Image, Text, HStack, VStack, Stack, Container, Wrap, Center, IconButton, Spinner, Badge, Grid, List, Strong, Collapsible, Avatar, useAvatar, Button } from "@chakra-ui/react"
+import { toaster } from "@/components/ui/toaster"
 import { useNavigate, useParams } from "react-router"
+import { useDispatch, useSelector } from 'react-redux'
 import api from "../../services/api"
 import NavBarShop from "@/components/shop/NavBarShop"
 import MultipleProductImages from "./MultipleProductImages"
@@ -14,6 +16,8 @@ import formatDate from "../formatDate"
 import { LuCircleCheck, LuCircleDashed } from "react-icons/lu"
 import { FaShop } from "react-icons/fa6";
 import Countdown from "../Countdown"
+import useAccessToken from "@/services/token"
+import { getUserInfo } from "@/services/authSlice"
 
 interface CountdownTimerProps {
   targetDate: string | null;
@@ -73,6 +77,19 @@ interface ShopDataProps {
     banner: string
     template: string
 }
+interface OrderProp {
+    product: string;
+    shop: string
+    customer: string
+    shop_name: string
+    product_name: string
+    customer_name: string
+    order_number: string
+    order_status: string
+    order_data: string
+    order_updated_at: string
+
+}
 const ProductDetailByShop: React.FC = () => {
     const Navigate = useNavigate()
     const { productId, shopId } = useParams()
@@ -83,11 +100,28 @@ const ProductDetailByShop: React.FC = () => {
     const [selectedProductId, setSelectedProductId] = useState<string>("")
     const [isMore, setIsMore] = useState<boolean>(false)
     const [isLess, setIsLess] = useState<boolean>(false)
-
+    
     const [isLoading, setIsLoading] = useState<boolean>(false)
     const [error, setError] = useState<string>("")
     const [currentImageIndex, setCurrentImageIndex] = useState<{ [key: string]: number }>({})
+    const [orderNumber, setOrderNumber] = useState<string>("")
+    
+    const navigate = useNavigate()
+    const dispatch = useDispatch()
+    const { user, userInfo } = useSelector((state: any) => state.auth)
+    const accessToken = useAccessToken(user)
+    const [orders, setOrders] = useState<OrderProp>([])
 
+    useEffect(() => {
+        if (!user || !user.access) {
+        return;
+        }
+
+        if (user.access && !userInfo) {
+        dispatch(getUserInfo() as any);
+        }
+    }, [user, userInfo, navigate, dispatch]);
+    
     const openGoogleMaps = (address: string) => {
         const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`
         window.open(url, '_blank')
@@ -112,9 +146,21 @@ const ProductDetailByShop: React.FC = () => {
         }
     }
 
-    useEffect(() => {
+    // useEffect(() => {
+    //     let isMounted = true
+    //     const loadProducts = async () => {
+    //         if (isMounted) {
+    //             await fetchProductList()
+    //         }
+    //     }
+    //     loadProducts()
+    //     return () => {
+    //         isMounted = false
+    //     }
+    // }, [productId])
+    useEffect(()=>{
         fetchProductList()
-    }, [productId])
+    },[])
 
     const getCurrentImageOtherProduct = (product: string, images: ProductImage[]) => {
         if (!images || images.length === 0) return null
@@ -202,6 +248,57 @@ const ProductDetailByShop: React.FC = () => {
         Navigate(`/shop-page/templates/${shopId}`)
     }
 
+    console.log("order_number: ", orderNumber)
+    
+
+    const buyProducts = async (product: string, shop: string, customer: string, order_number: string) => {
+        if (!userInfo){
+            alert("Please Login to buy products")
+        }
+        const url = `${import.meta.env.VITE_API_BASE_URL}/shops/order-create/`
+            
+        try {
+            await api.post(url,
+                {
+                    product: product,
+                    shop: shop,
+                    customer: customer,
+                    order_number: order_number,
+                    order_status: "Pending",
+
+                }, 
+                {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
+                },
+            })
+            toaster.create({
+                title: 'Success',
+                description: `Product ${orders.product_name} added successfully`,
+                type: 'success',
+                duration: 3000,
+            })
+            // setFormData({
+            //     product: "",
+            //     shop: "",
+            //     customer: "",
+            //     shop_name: "",
+            //     product_name: "",
+            //     customer_name: "",
+            //     order_number: "",
+            //     order_status: "",
+            //     order_data: "",
+            //     order_updated_at: "",
+            // })
+        }catch(error: any){
+            console.error("buyProduct error", error.response.data || error.message)
+        }
+    }
+    const [isClick, setIsClick] = useState<boolean>(false)
+    const handleClick = ()=>{
+        setIsClick(true)
+    }
     return (
         <Container maxW={'1100px'} p={"10px"}>
             <Stack>
@@ -209,7 +306,13 @@ const ProductDetailByShop: React.FC = () => {
                 <Box mb={"30px"}>
                     {shops && shops.map((shop: ShopDataProps) => (
                         <Box key={shop.id} onClick={() => ReturnShopHomePage(shop.id)} cursor={"pointer"}>
-                            <NavBarShop logo={shop.logo} name={shop.name} />
+                            {/* <NavBarShop logo={shop.logo} name={shop.name} /> */}
+                            <HStack justifyContent={"center"}>
+                                <Avatar.Root>
+                                    <Avatar.Image src={shop.logo}/>
+                                </Avatar.Root>
+                                <Heading>{shop.name}</Heading>
+                            </HStack>
                             <Image src={shop.banner} maxH={"200px"} w={"100%"} fit={"fill"} rounded={"5px"}/>
                         </Box>
                     ))}
@@ -270,11 +373,17 @@ const ProductDetailByShop: React.FC = () => {
                                         
                                     </HStack>
                                     {/* Right Side - Product Details */}
-                                    <VStack align="start" gap={"10px"} flexBasis={{base:"100%", md: "50%"}} h={{md: "520px", base:"420px"}}
-                                        shadow={"2px 2px 25px 2px rgb(75, 75, 79) "} rounded={'7px'} p={"20px"}>
+                                    <VStack align="start" gap={"10px"} flexBasis={{base:"100%", md: "50%"}} maxH={{md: "520px", base:"720px"}}
+                                        shadow={"2px 2px 25px 2px rgb(75, 75, 79) "} rounded={'7px'} p={"10px"}>
                                         <Heading fontSize={"24px"} fontWeight={"bold"}>
                                             {p.name}
                                         </Heading>
+                                        
+                                        {shops && shops.map((s: ShopDataProps) => (
+                                            <Box key={s.id} border={"1px solid"} rounded={"5px"}>
+                                                <Button onClick={() => buyProducts(p.name, s.name, userInfo?.id, orderNumber)}>Buy this product</Button>
+                                            </Box>
+                                        ))}
                                         <List.Root gap={2} variant={"plain"}>
                                             <List.Item>
                                                 <HStack>
@@ -283,13 +392,16 @@ const ProductDetailByShop: React.FC = () => {
                                                     </Box>
                                                     <Collapsible.Root>
                                                         <Collapsible.Trigger
-                                                            fontSize={"18px"}
+                                                            fontSize={"16px"}
                                                             cursor={"pointer"} 
                                                             transition="all 0.2s"
                                                             _hover={{ borderColor: "blue.400", transform: "scale(1.05)", color:"red" }}  
                                                             color={"black.200"}
+                                                            textDecorationLine={"underline"}
+                                                            textDecorationColor={"blue.600"}
+                                                            
                                                         >
-                                                            Click for Shop's contact details
+                                                            Shop's contact details
                                                         </Collapsible.Trigger>
                                                         <Collapsible.Content>
                                                             <Box>
@@ -326,6 +438,7 @@ const ProductDetailByShop: React.FC = () => {
                                                                                 </a>
                                                                             </HStack>
                                                                         </Stack>
+                                                                        
                                                                     </Box>
                                                                 ))}
                                                             </Box>                            
@@ -428,13 +541,10 @@ const ProductDetailByShop: React.FC = () => {
                                         <Text onClick={MoreDetail} cursor={"pointer"} fontStyle={"italic"} fontWeight={"bold"}>more details ...</Text>
                                     </VStack>
                                     {isMore && (
-                                        <HStack p={"20px"} shadow={"2px 2px 25px 2px rgb(75, 75, 79) "} rounded={"7px"}>
-                                            <Text textAlign={"justify"}>
-                                                {p.description}
-                                                <Text onClick={LessDetail} cursor={"pointer"} fontWeight={"bold"}>less details</Text>
-                                            </Text>
-                                            
-                                        </HStack>
+                                        <Box p={"20px"} shadow={"2px 2px 25px 2px rgb(75, 75, 79) "} rounded={"7px"} w={"100%"}>
+                                            <Text textAlign={"justify"} w={'100%'}>{p.description}</Text>
+                                            <Text onClick={LessDetail} cursor={"pointer"} fontWeight={"bold"}>less details</Text>    
+                                        </Box>
                                     )}
                                 </Wrap>
                                 

@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     # apps
     'core',
     'accounts',
+    # 'accounts.apps.AccountsConfig',
     'shops',
     # 'connections',
     # 'chat',
@@ -168,8 +169,9 @@ DJOSER = {
     'ACTIVATION_URL': 'activate/{uid}/{token}',
     'SEND_ACTIVATION_EMAIL': True,
     'SERIALIZERS': {
-        'user_create': 'accounts.serializers.UserSerializer',
+        'user_create': 'accounts.serializers.UserCreateSerializer',
         'user': "accounts.serializers.UserSerializer",
+        'current_user': 'accounts.serializers.UserSerializer',
         'user_delete': "djoser.serializers.UserDeleteSerializer",
     },
     # 'USER_SERIALIZER': 'accounts.serializers.MemberUserSerializer',

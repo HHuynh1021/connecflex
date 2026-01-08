@@ -640,7 +640,7 @@ const ShopInfo:React.FC = () => {
     }
 
     return (
-        <Box p={6} maxW="1200px" mx="auto">
+        <Box maxW={"100%"}>
             <Box mt={"20px"}>
                 {shops && shops.length === 0 ? (
                     <Box textAlign="center" py={10}>

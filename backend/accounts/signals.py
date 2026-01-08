@@ -4,32 +4,37 @@ from django.utils.text import slugify
 
 @receiver(post_save, sender='accounts.User')
 def create_shop_account(sender, instance, created, **kwargs):
-    from shops.models import Shop  # local import to avoid circular import
-    if not instance.is_superuser:
-        if created:
+    from shops.models import Shop
+    if instance.role != "shop_admin":
+        return
+    if instance.role == "guest_user":
+        return
+    if instance.is_superuser:
+        return
+
+    if created:
+        Shop.objects.create(
+            shop_account=instance,
+            email=instance.email,
+            name = '',
+            street = '',
+            zipcode = '',
+            phone = '',
+            logo = None,
+
+        )
+    else:
+        try:
+            shop = instance.shop_account  # reverse OneToOne
+            shop.email = instance.email
+            shop.save()
+        except Shop.DoesNotExist:
             Shop.objects.create(
                 shop_account=instance,
-                name=instance.name,
                 email=instance.email,
-                street='',        # optional default
-                zipcode='',       # optional default
-                phone='',         # optional default
-                logo=None,        # optional default
+                name='',
+                street='',
+                zipcode='',
+                phone='',
+                logo=None,
             )
-        else:
-            try:
-                shop = instance.shop_account  # reverse OneToOne
-                shop.name = instance.name
-                shop.email = instance.email
-                shop.save()
-            except Shop.DoesNotExist:
-                # fallback: create if missing
-                Shop.objects.create(
-                    shop_account=instance,
-                    name=instance.name,
-                    email=instance.email,
-                    street='',
-                    zipcode='',
-                    phone='',
-                    logo=None,
-                )
