@@ -1,6 +1,8 @@
 from decimal import Decimal
 
 from rest_framework import serializers
+
+from customers.serializers import GuestUserSerializer
 from shops.models import Shop, Product, ProductImage, OrderProduct
 
 
@@ -43,12 +45,14 @@ class ProductSerializer(serializers.ModelSerializer):
     discount = serializers.SerializerMethodField()
     shop_city = serializers.SerializerMethodField()
     current_price = serializers.SerializerMethodField()
+    currency_unit = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = "__all__"
         read_only_fields = ('id',)
-
+    def get_currency_unit(self, obj):
+        return obj.product.currency_unit
     def get_shop_name(self, obj):
         return obj.shop_id.name
 
@@ -83,8 +87,13 @@ class ProductSerializer(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
     shop_name = serializers.SerializerMethodField()
     product_name = serializers.SerializerMethodField()
+    product_property = serializers.SerializerMethodField()
     customer_name = serializers.SerializerMethodField()
     total_price = serializers.SerializerMethodField()
+    currency_unit = serializers.SerializerMethodField()
+    customer_address = serializers.SerializerMethodField()
+    customer_phone = serializers.SerializerMethodField()
+    customer_email = serializers.SerializerMethodField()
 
     class Meta:
         model = OrderProduct
@@ -98,7 +107,68 @@ class OrderSerializer(serializers.ModelSerializer):
         return obj.product.name if obj.product else None
 
     def get_customer_name(self, obj):
-        return obj.customer.full_name if obj.customer else None
+        return obj.customer.get_full_name if obj.customer else None
 
     def get_total_price(self, obj):
         return obj.order_total
+    def get_currency_unit(self, obj):
+        return obj.product.currency_unit
+
+    def get_customer_address(self, obj):
+        address = [
+            obj.customer.street,
+            obj.customer.city,
+            obj.customer.province,
+            obj.customer.state,
+            obj.customer.zipcode,
+            obj.customer.country,
+        ]
+        return ", ".join(filter(None, address))
+    # def get_product_property(self, obj):
+    #     property = [
+    #         f"color: {obj.product.color}",
+    #         f"Dimension: {obj.product.dimension}",
+    #         f"Weight: {obj.product.weight}",
+    #         f"Other: {obj.product.other}",
+    #     ]
+    #     return "\n ".join(filter(None, property))
+
+    # def get_product_property(self, obj):
+    #     properties = []
+    #
+    #     if obj.product.color:
+    #         properties.append(f"Color: {obj.product.color}")
+    #     if obj.product.dimension:
+    #         properties.append(f"Dimension: {obj.product.dimension}")
+    #     if obj.product.weight:
+    #         properties.append(f"Weight: {obj.product.weight}")
+    #     if obj.product.other:
+    #         properties.append(f"Other: {obj.product.other}")
+    #     return "\n".join(properties)
+
+    def get_product_property(self, obj):
+        exclude_fields = ['id','shop_id', 'price', 'new_price', 'updated_at', 'discount_end_at', 'currency_unit', 'created_at']
+        fields = [
+            f for f in obj.product._meta.fields
+            if not f.name.startswith('_') and f.name not in exclude_fields
+        ]
+
+        properties = []
+        for field in fields:
+            value = getattr(obj.product, field.name)
+            if value:
+                # Capitalize field name nicely
+                label = field.name.replace('_', ' ').title()
+                properties.append(f"{label}: {value}")
+
+        return "\n".join(properties)
+
+    def get_customer_phone(self, obj):
+        if obj.customer.phone:
+            return obj.customer.phone
+    def get_customer_email(self, obj):
+        if obj.customer.email:
+            return obj.customer.email
+
+
+

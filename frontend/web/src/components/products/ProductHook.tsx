@@ -13,7 +13,7 @@ import {
 } from "@chakra-ui/react"
 import { useParams } from "react-router"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import api from "../../services/api"
+import {apiPublic} from "../../services/api"
 
 interface ProductImage {
     id: string
@@ -49,7 +49,7 @@ const useProduct = () => {
 
         try {
             const url = `${import.meta.env.VITE_API_BASE_URL}/shops/product-list-view/`
-            const res = await api.get(url)
+            const res = await apiPublic.get(url)
             
             console.log("API Response:", res.data)
             

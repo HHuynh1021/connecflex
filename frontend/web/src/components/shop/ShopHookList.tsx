@@ -29,8 +29,8 @@ const useShopList = () => {
             const url = `${import.meta.env.VITE_API_BASE_URL}/shops/shop-list-view/`
             const response = await api.get(url)
             const shopdata = Array.isArray(response.data[0]) ? response.data[0] : response.data
-            const filter = shopdata.filter((s: ShopDataProps) => s.id === shopId)
-            setShops(filter)
+            // const filter = shopdata.filter((s: ShopDataProps) => s.id === shopId)
+            setShops(shopdata)
         } catch (error: any) {
             console.error("fetching error", error.response?.data || error.message)
         } finally {

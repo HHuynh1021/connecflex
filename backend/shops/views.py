@@ -10,7 +10,7 @@ class ShopListView(generics.ListAPIView):
     queryset = Shop.objects.all()
     permission_classes = [AllowAny]
     serializer_class = ShopSerializer
-    authentication_classes=[JWTAuthentication]
+    # authentication_classes=[JWTAuthentication]
 
 class ShopListAndCreateView(generics.ListCreateAPIView):
     queryset = Shop.objects.all()
@@ -27,9 +27,10 @@ class ShopEditorView(generics.RetrieveUpdateDestroyAPIView):
     authentication_classes = [JWTAuthentication]
     serializer_class = ShopSerializer
 
-class ProductListView(generics.ListCreateAPIView):
+# Product Views
+class ProductListView(generics.ListAPIView):
     queryset = Product.objects.all()
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [AllowAny]
     serializer_class = ProductSerializer
 
 class ProductListAndCreateView(generics.ListCreateAPIView):

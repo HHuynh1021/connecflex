@@ -1,30 +1,14 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
+from core.utils import custom_id
 
-# Create your models here.
-class CustomerManager(BaseUserManager):
-    """Manager for Customer model"""
-    
-    def create_user(self, email, password=None, **extra_fields):
-        """Create and return a regular customer"""
-        if not email:
-            raise ValueError('The Email field must be set')
-        
-        email = self.normalize_email(email)
-        user = self.model(email=email, **extra_fields)
-        user.set_password(password)
-        user.save(using=self._db)
-        return user
-    
-    def create_superuser(self, email, password=None, **extra_fields):
-        """
-        Override to prevent superuser creation
-        Customers should never be superusers
-        """
-        raise NotImplementedError('Customer accounts cannot be superusers')
 
-class GuestUser(AbstractBaseUser):
+def default_guest_user_id():
+    return custom_id(prefix="cus").lower()
+
+class GuestUser(models.Model):
     id = models.CharField(
         primary_key=True,
         max_length=255,
@@ -32,45 +16,25 @@ class GuestUser(AbstractBaseUser):
         editable=False,
         unique=True,
     )
+    user = models.OneToOneField('accounts.User', on_delete=models.CASCADE, related_name='guest_user')
     first_name = models.CharField(_("First name"), max_length=150)
     last_name = models.CharField(_("Last name"), max_length=150)
     email = models.EmailField(_("Email address"), unique=True)
-    phone = models.CharField(max_length=20, null=True, blank=True)
+    phone = models.CharField(max_length=20)
     street = models.CharField(max_length=255)
     province = models.CharField(max_length=255, null=True, blank=True)
-    city = models.CharField(max_length=255, null=True, blank=True)
+    city = models.CharField(max_length=255)
     state = models.CharField(max_length=255, null=True, blank=True)
     zipcode = models.CharField(max_length=255)
     country = models.CharField(max_length=255, default='Finland')
     avatar = models.ImageField(upload_to='avatar', null=True, blank=True)
     date_of_birth = models.DateField(null=True, blank=True)
-    is_active = models.BooleanField(default=True)
-    date_joined = models.DateTimeField(default=timezone.now)
-    
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['first_name', 'last_name']
-    objects = CustomerManager()
-
-    class Meta:
-        verbose_name = "customer"
-        verbose_name_plural = "customers"
-    
-    def get_full_name(self):
-        return f'{self.first_name} {self.last_name}'.strip()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     
     @property
-    def is_superuser(self):
-        """Customers are never superusers"""
-        return False
+    def get_full_name(self):
+        return f"{self.first_name} {self.last_name}"
     
-    def has_perm(self, perm, obj=None):
-        """Customers have no permissions"""
-        return False
-    
-    def has_perms(self, perm_list, obj=None):
-        """Customers have no permissions"""
-        return False
-    
-    def has_module_perms(self, app_label):
-        """Customers have no module permissions"""
-        return False
+    def __str__(self):
+        return f"{self.first_name} {self.last_name}"

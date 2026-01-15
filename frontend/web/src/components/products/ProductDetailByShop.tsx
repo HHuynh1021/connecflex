@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react"
-import { Box, Heading, Image, Text, HStack, VStack, Stack, Container, Wrap, Center, IconButton, Spinner, Badge, Grid, List, Strong, Collapsible, Avatar, useAvatar, Button } from "@chakra-ui/react"
+import { Box, Heading, Image, Text, HStack, VStack, Stack, Container, Wrap, Center, IconButton, Spinner, Badge, Grid, List, Strong, Collapsible, Avatar, useAvatar, Button, Input } from "@chakra-ui/react"
 import { toaster } from "@/components/ui/toaster"
 import { useNavigate, useParams } from "react-router"
 import { useDispatch, useSelector } from 'react-redux'
 import api from "../../services/api"
-import NavBarShop from "@/components/shop/NavBarShop"
-import MultipleProductImages from "./MultipleProductImages"
 import { GiShop } from "react-icons/gi"
 import { MdEmail } from "react-icons/md"
 import { BsFillTelephoneOutboundFill } from "react-icons/bs"
@@ -18,6 +16,8 @@ import { FaShop } from "react-icons/fa6";
 import Countdown from "../Countdown"
 import useAccessToken from "@/services/token"
 import { getUserInfo } from "@/services/authSlice"
+import axios from "axios"
+import useCustomer from "../guestUsers/CustomerHook"
 
 interface CountdownTimerProps {
   targetDate: string | null;
@@ -35,8 +35,8 @@ interface Product {
     name: string;
     shop_id: string;
     description: string;
-    price: string;
-    new_price: string;
+    price: number;
+    new_price: number;
     discount_end_at: string;
     currency_unit: string;
     condition: string
@@ -88,12 +88,29 @@ interface OrderProp {
     order_status: string
     order_data: string
     order_updated_at: string
+    product_price: number
+
+}
+interface CustomerProp {
+    id: string
+    user: string
+    ful_name: string
+    birth_date: string
+    email: string
+    phone: string
+    address: string
+    contact: string
+    avata: string
+    created_at: string
 
 }
 const ProductDetailByShop: React.FC = () => {
     const Navigate = useNavigate()
     const { productId, shopId } = useParams()
     const { shops } = useShop(shopId || "")
+
+    const {customers, loading} = useCustomer()
+
     const [otherProducts, setOtherProducts] = useState<OtherProduct[]>([])
     const [products, setProducts] = useState<Product[]>([])
     const [selectedImageId, setSelectedImageId] = useState<string>("")
@@ -104,14 +121,14 @@ const ProductDetailByShop: React.FC = () => {
     const [isLoading, setIsLoading] = useState<boolean>(false)
     const [error, setError] = useState<string>("")
     const [currentImageIndex, setCurrentImageIndex] = useState<{ [key: string]: number }>({})
-    const [orderNumber, setOrderNumber] = useState<string>("")
+    const [quantity, setQuantity] = useState<number>(1)
     
     const navigate = useNavigate()
     const dispatch = useDispatch()
     const { user, userInfo } = useSelector((state: any) => state.auth)
     const accessToken = useAccessToken(user)
     const [orders, setOrders] = useState<OrderProp>([])
-
+    
     useEffect(() => {
         if (!user || !user.access) {
         return;
@@ -130,9 +147,10 @@ const ProductDetailByShop: React.FC = () => {
     const fetchProductList = async () => {
         try {
             const url = `${import.meta.env.VITE_API_BASE_URL}/shops/product-list-view/`
-            const res = await api.get(url)
+            const res = await axios.get(url)
             const data = res.data
             const filter = data.filter((p: Product) => p.id === productId)
+            console.log("product detail data: ", filter)
             setProducts(filter)
             const otherProducts = data.filter((o: Product) => o.id !== productId)
             setOtherProducts(otherProducts)
@@ -146,21 +164,19 @@ const ProductDetailByShop: React.FC = () => {
         }
     }
 
-    // useEffect(() => {
-    //     let isMounted = true
-    //     const loadProducts = async () => {
-    //         if (isMounted) {
-    //             await fetchProductList()
-    //         }
-    //     }
-    //     loadProducts()
-    //     return () => {
-    //         isMounted = false
-    //     }
-    // }, [productId])
-    useEffect(()=>{
-        fetchProductList()
-    },[])
+    useEffect(() => {
+        let isMounted = true
+        const loadProducts = async () => {
+            if (isMounted) {
+                await fetchProductList()
+            }
+        }
+        loadProducts()
+        return () => {
+            isMounted = false
+        }
+    }, [productId])
+
 
     const getCurrentImageOtherProduct = (product: string, images: ProductImage[]) => {
         if (!images || images.length === 0) return null
@@ -247,13 +263,17 @@ const ProductDetailByShop: React.FC = () => {
     const ReturnShopHomePage = (shopId: string)=> {
         Navigate(`/shop-page/templates/${shopId}`)
     }
-
-    console.log("order_number: ", orderNumber)
     
-
-    const buyProducts = async (product: string, shop: string, customer: string, order_number: string) => {
+    const orderNumber = `ORD-${Math.random().toString(36).substr(2,9)}`.toUpperCase()
+    console.log("orderNumber: ", orderNumber )
+    const buyProducts = async (e: React.FormEvent, product: string, shop: string, customer: string, price: number,  quantity: number, order_number: string) => {
+        e.preventDefault()
         if (!userInfo){
             alert("Please Login to buy products")
+        }
+        if (quantity <= 0) {
+            alert("Please enter a valid quantity")
+            return
         }
         const url = `${import.meta.env.VITE_API_BASE_URL}/shops/order-create/`
             
@@ -263,6 +283,8 @@ const ProductDetailByShop: React.FC = () => {
                     product: product,
                     shop: shop,
                     customer: customer,
+                    product_price: price,
+                    quantity: quantity,
                     order_number: order_number,
                     order_status: "Pending",
 
@@ -273,12 +295,7 @@ const ProductDetailByShop: React.FC = () => {
                     'Content-Type': 'application/json',
                 },
             })
-            toaster.create({
-                title: 'Success',
-                description: `Product ${orders.product_name} added successfully`,
-                type: 'success',
-                duration: 3000,
-            })
+            alert("Add the product successfully")
             // setFormData({
             //     product: "",
             //     shop: "",
@@ -295,10 +312,8 @@ const ProductDetailByShop: React.FC = () => {
             console.error("buyProduct error", error.response.data || error.message)
         }
     }
-    const [isClick, setIsClick] = useState<boolean>(false)
-    const handleClick = ()=>{
-        setIsClick(true)
-    }
+    const customer = userInfo ? customers.find((c:CustomerProp) => c.user === userInfo.id) : undefined
+
     return (
         <Container maxW={'1100px'} p={"10px"}>
             <Stack>
@@ -381,7 +396,13 @@ const ProductDetailByShop: React.FC = () => {
                                         
                                         {shops && shops.map((s: ShopDataProps) => (
                                             <Box key={s.id} border={"1px solid"} rounded={"5px"}>
-                                                <Button onClick={() => buyProducts(p.name, s.name, userInfo?.id, orderNumber)}>Buy this product</Button>
+                                                <form onSubmit={(e) => buyProducts(e, p.id, s.id, customer?.id, p.new_price > 0 ? p.new_price : p.price,  quantity, orderNumber)}>
+                                                    <Input
+                                                        value={quantity}
+                                                        onChange={(e)=> setQuantity(Number(e.target.value))}
+                                                    />
+                                                    <Button type="submit">Buy this product</Button>
+                                                </form>
                                             </Box>
                                         ))}
                                         <List.Root gap={2} variant={"plain"}>

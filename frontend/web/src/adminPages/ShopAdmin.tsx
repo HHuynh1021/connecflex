@@ -5,7 +5,7 @@ import useAccessToken from '../services/token'
 import { getUserInfo } from '@/services/authSlice'
 import { logout, clearAuth } from "../services/authSlice"
 import type { AppDispatch } from '@/services/store'
-import { Box, HStack, Button, Text, IconButton, Menu, Avatar, Portal, List, Stack} from '@chakra-ui/react'
+import { Box, HStack, Button, Text, IconButton, Menu, Avatar, Portal} from '@chakra-ui/react'
 import { LuMoon, LuSun } from "react-icons/lu"
 import { useColorMode } from '../components/ui/color-mode'
 import { GiHamburgerMenu } from "react-icons/gi";
@@ -48,7 +48,6 @@ const ShopAdmin:React.FC = () => {
     useEffect(() => {
           if (!user || !user.access) {
             Navigate("/login");
-            return;
           }
       
           if (user.access && !userInfo) {
@@ -66,13 +65,16 @@ const ShopAdmin:React.FC = () => {
         return () => mediaQuery.removeEventListener('change', handleResize);
     }, []);
     return (
-        <Box p={6} maxW="900px" mx="auto">
+        <Box px={"20px"} w="100%" maxW={"90vw"} mx={"auto"}>
             
             {userInfo && userInfo.role === "shop_admin" ? (
-            <Box>
-                <Box>
+            <Box w={"100%"}>
+                <Box w={"100%"}>
                 {isDesktop ? (
-                    <HStack justifyContent={"space-between"} fontWeight={"bold"} fontSize={"20px"} shadow={"2xl"} px={'20px'} py={"10px"} rounded={"7px"}>
+                    <HStack w={"100%"} justifyContent={"space-between"} fontWeight={"bold"} fontSize={"20px"} 
+                        shadow={"2xl"} px={'20px'} py={"10px"} rounded={"7px"}>
+
+                        <NavLink to={"admin-home"}>Home</NavLink>
                         <NavLink to={"shop-info"}>Shop</NavLink>
                         <NavLink to={"shop-product"}>Products</NavLink>
                         <HStack gap={"20px"}>
@@ -91,6 +93,7 @@ const ShopAdmin:React.FC = () => {
                         </IconButton>
                         </HStack>
                     </HStack>
+                    
                 ):(
                     <HStack>
                     <Menu.Root>
@@ -125,20 +128,9 @@ const ShopAdmin:React.FC = () => {
                     </HStack>
                 )}
                 </Box>
-                <Stack flexDirection={"row"}>
-                    <Box flexBasis={"30%"}>
-                        <List.Root p={"20px"}>
-                            <List.Item>
-                                <Link to={"order-list"}>Order List</Link>
-                            </List.Item>
-                            <List.Item>Product Management</List.Item>
-                            <List.Item>Shop Info</List.Item>
-                        </List.Root>
-                    </Box>
-                    <Box flexBasis={"70%"}>
-                        <Outlet/>
-                    </Box>
-                </Stack>
+                <Box>
+                    <Outlet/>
+                </Box>
             </Box>
              ):(
                 <Box>

@@ -21,8 +21,8 @@ interface ProductProp {
     name: string;
     shop_id: string;
     description: string;
-    price: string;
-    new_price: string;
+    price: number;
+    new_price: number;
     discount_end_at: string;
     currency_unit: string;
     condition: string;

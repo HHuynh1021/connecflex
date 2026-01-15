@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { Box, Text, Center, Spinner} from "@chakra-ui/react"
 import api from "../../services/api"
+import axios from "axios"
 
 interface ProductImage {
     id: string
@@ -30,7 +31,7 @@ const useProductList = () => {
 
         try {
             const url = `${import.meta.env.VITE_API_BASE_URL}/shops/product-list-view/`
-            const res = await api.get(url)
+            const res = await axios.get(url)
             
             // Handle response structure
             const data = Array.isArray(res.data) ? res.data : (Array.isArray(res.data[0]) ? res.data[0] : [res.data])

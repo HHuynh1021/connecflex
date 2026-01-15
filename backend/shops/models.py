@@ -56,7 +56,7 @@ class Product(models.Model):
     name = models.CharField(max_length=255)
     shop_id = models.ForeignKey(Shop, on_delete=models.CASCADE, related_name='products')
     description = models.TextField(blank=True, null=True)
-    new_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    new_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, default=0)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     discount_end_at = models.DateTimeField(null=True, blank=True)
     currency_unit = models.CharField(max_length=5, default="EUR")
@@ -71,10 +71,6 @@ class Product(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     
     def get_current_new_price(self):
-        """
-        Returns new_price if discount is still valid, otherwise 0.
-        Also updates the database if discount has expired.
-        """
         if self.discount_end_at and timezone.now() > self.discount_end_at and self.new_price > 0:
             # Discount has expired, clear it in database
             self.new_price = 0
@@ -152,7 +148,8 @@ class OrderProduct(models.Model):
     )
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='orders')
     shop = models.ForeignKey(Shop, on_delete=models.CASCADE, related_name='orders')
-    customer = models.ForeignKey('accounts.User', on_delete=models.CASCADE, related_name='orders')
+    customer = models.ForeignKey('customers.GuestUser', on_delete=models.CASCADE, related_name='orders')
+    product_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     quantity = models.IntegerField(default=1)
     order_number = models.CharField(max_length=255)
     order_status = models.CharField(max_length=255, default="Pending")
@@ -164,7 +161,7 @@ class OrderProduct(models.Model):
     def save(self, *args, **kwargs):
         # Auto-calculate order_total
         if self.product:
-            self.order_total = self.quantity * self.product.price
+            self.order_total = self.quantity * self.product_price
         super().save(*args, **kwargs)
     def __str__(self):
         return f"{self.order_number} {self.product.name} - {self.customer.email} - {self.order_status}"

@@ -94,15 +94,33 @@ const AddProducts: React.FC = () => {
         }
     }, [shops])
 
-    // Handle form field changes
-    const handleChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-    ) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value,
-        })
+
+    // const handleChange = (
+    //     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    // ) => {
+    //     setFormData({
+    //         ...formData,
+    //         [e.target.name]: e.target.value,
+    //     })
+    // }
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target
+        
+        // Format datetime-local to ISO string for discount_end_at
+        if (name === 'discount_end_at' && value) {
+            const formattedValue = new Date(value).toISOString()
+            setFormData({
+                ...formData,
+                [name]: formattedValue
+            })
+        } else {
+            setFormData({
+                ...formData,
+                [name]: value
+            })
+        }
     }
+
     const handleSelectChange = (
         e: React.ChangeEvent<HTMLSelectElement>
     ) => {
@@ -274,18 +292,17 @@ const AddProducts: React.FC = () => {
         setLoading(true)
 
         try {
-            // ============================================
-            // STEP 1: Create Product First
-            // ============================================
             const productUrl = `${import.meta.env.VITE_API_BASE_URL}/shops/product-list-create/`
             
             const productData = {
                 name: formData.name,
                 shop_id: formData.shop_id,
                 description: formData.description,
-                price: formData.price,
-                new_price: formData.new_price,
-                discount_end_at: formData.discount_end_at,
+                price: parseFloat(formData.price),
+                new_price: formData.new_price || formData.price,
+                ...(formData.discount_end_at && formData.new_price && {
+                    discount_end_at: formData.discount_end_at
+                }),
                 currency_unit: formData.currency_unit,
                 condition: formData.condition,
                 guaranty: formData.guaranty,
@@ -294,7 +311,7 @@ const AddProducts: React.FC = () => {
                 weight: formData.weight,
                 other: formData.other,
                 category: formData.category,
-                image: formData.image
+                // image: formData.image
             }
 
             const productResponse = await api.post(productUrl, productData, {
@@ -304,15 +321,9 @@ const AddProducts: React.FC = () => {
                 },
             })
 
-            // ============================================
-            // GET THE PRODUCT ID
-            // ============================================
             const productId = productResponse.data.id
-            console.log("Product created successfully with ID:", productId)
+            // console.log("Product created successfully with ID:", productId)
 
-            // ============================================
-            // STEP 2: Upload Images with Product ID
-            // ============================================
             const imageUrl = `${import.meta.env.VITE_API_BASE_URL}/shops/product-image-create/`
 
             const imageUploadPromises = images.map(async (img, index) => {
@@ -378,7 +389,20 @@ const AddProducts: React.FC = () => {
             setLoading(false)
         }
     }
-
+    const getDatetimeLocalValue = (isoString: string) => {
+        if (!isoString) return ''
+        try {
+            const date = new Date(isoString)
+            const year = date.getFullYear()
+            const month = String(date.getMonth() + 1).padStart(2, '0')
+            const day = String(date.getDate()).padStart(2, '0')
+            const hours = String(date.getHours()).padStart(2, '0')
+            const minutes = String(date.getMinutes()).padStart(2, '0')
+            return `${year}-${month}-${day}T${hours}:${minutes}`
+        } catch {
+            return ''
+        }
+    }
     return (
         <Box maxW="100%" py={8}>
             <Box bg="white" p={8} borderRadius="lg" shadow="md">
@@ -399,26 +423,6 @@ const AddProducts: React.FC = () => {
                                 size="lg"
                             />
                         </Field.Root>
-
-                        {/* Shop ID - Display only */}
-                        {/* <Field.Root>
-                            <Field.Label>Shop ID</Field.Label>
-                            <Input
-                                name="shop_id"
-                                value={formData.shop_id}
-                                readOnly
-                                placeholder="Loading shop ID..."
-                                size="lg"
-                                bg="gray.100"
-                            />
-                            <Field.HelperText>
-                                {shops && shops.length > 0 
-                                    ? `Using shop: ${shops[0]?.name || 'Your Shop'}`
-                                    : 'No shop found. Please create a shop first.'}
-                            </Field.HelperText>
-                        </Field.Root> */}
-
-                        {/* Price */}
                         <Field.Root required>
                             <Field.Label>
                                 Price <Field.RequiredIndicator />
@@ -433,10 +437,12 @@ const AddProducts: React.FC = () => {
                                 size="lg"
                             />
                         </Field.Root>
+                        
                         <Field.Root>
                             <Field.Label>Discount Price</Field.Label>
                             <Input
                                 name="new_price"
+                                defaultValue={0}
                                 type="number"
                                 step="0.01"
                                 value={formData.new_price}
@@ -451,71 +457,116 @@ const AddProducts: React.FC = () => {
                                 name="discount_end_at"
                                 type="datetime-local"
                                 step="0.01"
-                                value={formData.discount_end_at}
+                                value={getDatetimeLocalValue(formData.discount_end_at)}
+                                defaultValue={''}
                                 onChange={handleChange}
-                                placeholder="0.00"
+                                placeholder="Select date and time"
                                 disabled={!formData.new_price}
                                 size="lg"
                             />
                         </Field.Root>
-                        <label htmlFor="currency_unit">Currency Unit:</label>
-                        <select
-                            id='currency_unit'
-                            name='currency_unit'
-                            value={formData.currency_unit}
-                            onChange={handleSelectChange}
-                            style={{border:"1px solid", borderRadius:"5px", padding:"10px"}}
-                        >
-                            <option value={""}>Choose one</option>
-                            <option value={"EUR"}>EUR</option>
-                            <option value={"VND"}>VND</option>
-                            <option value={"USD"}>USD</option>
-                        </select>
-                        <label htmlFor="condition"><HStack>Product Condition <Text color={"red"}>*</Text></HStack></label>
-                        <select
-                            required
-                            id='condition'
-                            name='condition'
-                            value={formData.condition}
-                            onChange={handleSelectChange}
-                            style={{border:"1px solid", borderRadius:"5px", padding:"10px"}}
-                        >
-                            <option value="">Choose one</option>
-                            <option value="NEW">NEW</option>
-                            <option value="USED - LIKE NEW">USED - LIKE NEW</option>
-                            <option value="USED - GOOD">USED - GOOD</option>
-                            <option value="NOT WORKING">NOT WORKING</option>
-                            <option value="BROKEN">BROKEN</option>
-                        </select>
+                        <Field.Root required>
+                            <Field.Label htmlFor="currency_unit">
+                                Currency Unit
+                                <Field.RequiredIndicator />
+                            </Field.Label>
+                            <select
+                                id='currency_unit'
+                                name='currency_unit'
+                                value={formData.currency_unit}
+                                onChange={handleSelectChange}
+                                style={{border:"1px solid", borderRadius:"5px", padding:"10px"}}
+                                
+                            >
+                                <option value={""}>Choose one</option>
+                                <option value={"EUR"}>EUR</option>
+                                <option value={"VND"}>VND</option>
+                                <option value={"USD"}>USD</option>
+                            </select>
+                        </Field.Root>
+                        <Field.Root required>
+                            <Field.Label htmlFor="condition">
+                                Product Condition
+                                <Field.RequiredIndicator />
+                            </Field.Label>
+                            <select
+                                required
+                                id='condition'
+                                name='condition'
+                                value={formData.condition}
+                                onChange={handleSelectChange}
+                                style={{border:"1px solid", borderRadius:"5px", padding:"10px"}}
+                            >
+                                <option value="">Choose one</option>
+                                <option value="NEW">NEW</option>
+                                <option value="USED - LIKE NEW">USED - LIKE NEW</option>
+                                <option value="USED - GOOD">USED - GOOD</option>
+                                <option value="NOT WORKING">NOT WORKING</option>
+                                <option value="BROKEN">BROKEN</option>
+                            </select>
+                        </Field.Root>
                         <Field.Root>
                             <Field.Label>Guaranty</Field.Label>
                             <Input
                                 name="guaranty"
-                                value={formData.guaranty}
+                                value={formData.guaranty || "2 years"}
                                 onChange={handleChange}
                                 placeholder="Enter guaranty"
                                 size="lg"
+                                defaultValue={"2 years"}
                             />
                         </Field.Root>
                         <Field.Root>
-                            <Field.Label>Category</Field.Label>
-                            <Input
-                                name="category"
+                            <Field.Label htmlFor="category">Category</Field.Label>
+                            <select
+                                required
+                                id='category'
+                                name='category'
                                 value={formData.category}
-                                onChange={handleChange}
-                                placeholder="Enter category"
-                                size="lg"
-                            />
+                                onChange={handleSelectChange}
+                                style={{border:"1px solid", borderRadius:"5px", padding:"10px"}}
+                            >
+                                <option value="">Choose one</option>
+                                <option value="retail">Retail</option>
+                                <option value="electronics">Electronics</option>
+                                <option value="computer">Computer and Accessories</option>
+                                <option value="interior">Interior</option>
+                                <option value="exterior">Exterior</option>
+                                <option value="transport">Transport</option>
+                                <option value="medical">Medical Equipment</option>
+                                <option value="pharmacy">Pharmacy</option>
+                                <option value="beauty">Beauty</option>
+                                <option value="fashion">Fashion</option>
+                                <option value="household">Household</option>
+                                <option value="garden">Garden</option>
+                                <option value="tools">Tools</option>
+                                <option value="sports">Sports</option>
+                                <option value="other">Other</option>
+                            </select>
+
                         </Field.Root>
                         <Field.Root>
                             <Field.Label>Color</Field.Label>
-                            <Input
-                                name="color"
+                            <select
+                                required
+                                id='color'
+                                name='color'
                                 value={formData.color}
-                                onChange={handleChange}
-                                placeholder="Enter color"
-                                size="lg"
-                            />
+                                onChange={handleSelectChange}
+                                style={{border:"1px solid", borderRadius:"5px", padding:"10px"}}
+                            >
+                                <option value="">Choose one</option>
+                                <option value="black">Black</option>
+                                <option value="white">White</option>
+                                <option value="gray">Gray</option>
+                                <option value="red">Red</option>
+                                <option value="blue">Blue</option>
+                                <option value="green">Green</option>
+                                <option value="yellow">Yellow</option>
+                                <option value="purple">Purple</option>
+                                <option value="orange">Orange</option>
+                                <option value="brown">Brown</option>
+                            </select>
                         </Field.Root>
                         <Field.Root>
                             <Field.Label>Dimension</Field.Label>
@@ -561,8 +612,6 @@ const AddProducts: React.FC = () => {
                             />
                         </Field.Root>
 
-                        {/* Product Images Upload */}
-                        {/* Product Images Upload */}
                         <Field.Root required={images.length === 0}>
                             <Field.Label>Product Images {images.length > 0 && `(${images.length}/${MAX_IMAGES})`}</Field.Label>
                             <Input

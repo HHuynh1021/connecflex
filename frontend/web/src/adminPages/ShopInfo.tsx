@@ -31,6 +31,7 @@ const ShopInfo:React.FC = () => {
     const { accessToken} = useAccessToken(user)
     const [shops, setShops] = useState<ShopDataProps[]>([])
     const [isLoading, setLoading] = useState<boolean>(false)
+    const [isDesktop, setIsDesktop] = useState<boolean>(false)
     
     const [editingField, setEditingField] = useState<{shopId: string, fieldName: string} | null>(null)
 
@@ -94,7 +95,14 @@ const ShopInfo:React.FC = () => {
         setEditingField({ shopId, fieldName })
         setTempValue(currentValue)
     }
-
+    // for responsive 
+    useEffect(() => {
+        const mediaQuery = window.matchMedia('(min-width: 450px')
+        const handleSize = (e) => setIsDesktop(e.matches)
+        mediaQuery.addEventListener('change', handleSize)
+        handleSize(mediaQuery)
+        return () => mediaQuery.removeEventListener('change', handleSize)
+    },[])
     // Cancel editing
     const handleCancel = () => {
         setEditingField(null)

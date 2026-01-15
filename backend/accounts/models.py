@@ -9,6 +9,7 @@ from core.utils import custom_id
 # Create your models here.
 def default_account_id():
     return custom_id(prefix="acc").lower()
+
 def default_guest_user_id():
     return custom_id(prefix="cus").lower()
 

@@ -18,9 +18,12 @@ interface OrderProp {
     order_status: string
     order_data: string
     order_updated_at: string
+    customer_address: string
+    customer_contact: string
+    currency_unit: string
 
 }
-const CreateOrder: React.FC = () => {
+const CreateOrder = () => {
     const navigate = useNavigate()
     const dispatch = useDispatch()
     const { user, userInfo } = useSelector((state: any) => state.auth)
@@ -35,7 +38,7 @@ const CreateOrder: React.FC = () => {
     
         if (user.access && !userInfo) {
         // console.log('Fetching user info with token:', user.access.substring(0, 20) + '...');
-        dispatch(getUserInfo());
+        dispatch(getUserInfo() as any);
         }
     }, [user, userInfo, navigate, dispatch]);
 
@@ -62,7 +65,7 @@ const CreateOrder: React.FC = () => {
         const order_number = generateRandomString()
         console.log("order_number: ", order_number)
     })
-    const formData = useState({
+    const [formData, setFormData] = useState({
         product: "",
         shop: "",
         customer: "",
@@ -73,6 +76,9 @@ const CreateOrder: React.FC = () => {
         order_status: "",
         order_data: "",
         order_updated_at: "",
+        currency_unit: "",
+        customer_contact: "",
+        customer_address: ""
     })
     const buyProducts = async() => {
         const url = `${import.meta.env.VITE_API_BASE_URL}/shops/order-create/`
@@ -101,6 +107,9 @@ const CreateOrder: React.FC = () => {
                 order_status: "",
                 order_data: "",
                 order_updated_at: "",
+                currency_unit: "",
+                customer_contact: "",
+                customer_address: "",
             })
         }catch(error: any){
             console.error("buyProduct error", error.response.data || error.message)

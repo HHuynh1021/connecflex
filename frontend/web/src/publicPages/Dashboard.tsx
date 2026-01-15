@@ -1,7 +1,6 @@
 import {useEffect, useState, useRef} from 'react'
 import { Outlet, useNavigate, NavLink, useParams, useLocation } from 'react-router'
 import { useSelector, useDispatch } from 'react-redux'
-import useAccessToken from '../services/token'
 import { getUserInfo } from '@/services/authSlice'
 import { logout, clearAuth } from "../services/authSlice"
 import type { AppDispatch } from '@/services/store'
@@ -48,17 +47,14 @@ const Dashboard:React.FC = () => {
     };
     useEffect(() => {
           if (!user || !user.access) {
-            // Navigate("/");
             return;
           }
       
           if (user.access && !userInfo) {
-            // console.log('Fetching user info with token:', user.access.substring(0, 20) + '...');
             dispatch(getUserInfo());
           }
         }, [user, userInfo, Navigate, dispatch]);
 
-        // console.log("userInfo: ", userInfo)
     
     useEffect(() => {
         const mediaQuery = window.matchMedia('(min-width: 450px)');

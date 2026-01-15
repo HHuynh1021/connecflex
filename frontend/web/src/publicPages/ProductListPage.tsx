@@ -1,9 +1,7 @@
-import {useState} from 'react'
 import useProductList from '../components/products/ProductListHook'
-import { IconButton, HStack, Heading, Image, Wrap, Box, Text, Center, Badge, Container, Avatar } from '@chakra-ui/react'
+import { Heading, Image, Wrap, Box, Text, Center, Badge, Container, Avatar } from '@chakra-ui/react'
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useNavigate } from 'react-router'
-import useShopList from '@/components/shop/ShopHookList'
 
 interface ProductImage {
     id: string
@@ -35,7 +33,7 @@ interface ProductListProps {
 const ProductListPage = () => {
     const { products, isLoading, error } = useProductList()
     const Navigate = useNavigate()
-console.log("product list page data: ", products)
+// console.log("product list page data: ", products)
     if(isLoading) {
         return <Box p={"10px"}>Loaing Products...</Box>
     }

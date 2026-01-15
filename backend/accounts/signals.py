@@ -25,7 +25,7 @@ def create_shop_account(sender, instance, created, **kwargs):
         )
     else:
         try:
-            shop = instance.shop_account  # reverse OneToOne
+            shop = instance.shop_account
             shop.email = instance.email
             shop.save()
         except Shop.DoesNotExist:
@@ -37,4 +37,44 @@ def create_shop_account(sender, instance, created, **kwargs):
                 zipcode='',
                 phone='',
                 logo=None,
+            )
+@receiver(post_save, sender='accounts.User')
+def create_customer_account(sender, instance, created, **kwargs):
+    from customers.models import GuestUser
+
+    if instance.role != "guest_user":
+        return
+
+    if instance.is_superuser:
+        return
+
+    if created:
+        GuestUser.objects.create(
+            user = instance,
+            first_name=instance.first_name,
+            last_name = instance.last_name,
+            email=instance.email,
+            phone='',
+            street = '',
+            city = '',
+            zipcode = '', 
+        )
+    else:
+        try:
+            guest_user = instance.guest_user
+            guest_user.first_name = instance.first_name
+            guest_user.last_name = instance.last_name
+            guest_user.email = instance.email
+            guest_user.save()
+        except GuestUser.DoesNotExist:
+            GuestUser.objects.create(
+                user=instance,
+                first_name=instance.first_name,
+                last_name=instance.last_name,
+                email=instance.email,
+                phone='',
+                street='',
+                city='',
+                zipcode='',
+
             )

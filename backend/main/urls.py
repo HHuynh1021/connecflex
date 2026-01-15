@@ -12,7 +12,7 @@ urlpatterns = [
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 
     # api for frontend
-    # path('api/', include('accounts.urls')),
+    path('api/', include('customers.urls')),
     path('api/', include('shops.urls')),
     # path('api/', include('chat.urls')),
     # path('api/', include('connections.urls')),

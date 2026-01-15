@@ -16,6 +16,7 @@ import ProductListPage from "./publicPages/ProductListPage"
 import HomePage from "./publicPages/HomePage"
 import LoginPage from "./auths/LoginPage"
 import OrderList from "./adminPages/OrderList"
+import AdminHomePage from "./adminPages/AdminHomePage"
 
 function App() {
 
@@ -41,7 +42,8 @@ function App() {
         <Route path="/password-reset/confirm/:uid/:token" element={<ResetPasswordConfirm/>} />
       {/* management pages paths */}
         <Route path="/management" element={<PrivateRoute element={<ShopAdmin/>}/>}>
-          <Route index element={<ShopInfo/>}/>
+          <Route index element={<AdminHomePage/>}/>
+          <Route path="/management/admin-home" element={<AdminHomePage/>}/>
           <Route path="/management/shop-info" element={<ShopInfo/>}/>
           <Route path="/management/shop-product/add-product" element={<AddProducts/>}/>
           <Route path="/management/shop-product" element={<ShopProducts/>}/>
