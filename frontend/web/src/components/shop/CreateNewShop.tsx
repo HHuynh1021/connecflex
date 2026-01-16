@@ -1,11 +1,11 @@
 import {useEffect, useState, useRef} from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
-import useAccessToken from '../services/token'
-import api from '../services/api'
+import useAccessToken from '@/services/token'
+import api from '@/services/api'
 import { Box, Text, Stack,Input, Textarea, Button, Spinner,Heading,Separator,Group,Image,} from '@chakra-ui/react'
 import { Field } from '@chakra-ui/react/field'
-import { toaster } from '../components/ui/toaster'
+import {toaster} from '@/components/ui/toaster'
 
 interface ShopDataProps {
     id: string

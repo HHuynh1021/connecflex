@@ -1,15 +1,16 @@
 import {useEffect, useState, useRef} from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import type { AppDispatch } from '../services/store'
-import useAccessToken from '../services/token'
+import type { AppDispatch } from '../../services/store'
+import useAccessToken from '../../services/token'
 
-import api from '../services/api'
-import { getUserInfo } from '../services/authSlice'
-import { Box, Input, Textarea, Button,Stack,Image,Text,Heading,Container,Grid,IconButton,Badge, VStack, HStack,} from '@chakra-ui/react'
+import api from '../../services/api'
+import { getUserInfo } from '../../services/authSlice'
+import { Box, Input, Textarea, Button, Stack, Image, Text, Heading, 
+    Container, Grid, IconButton, Badge, VStack, HStack,} from '@chakra-ui/react'
 import { Field } from '@chakra-ui/react/field'
-import { toaster } from '../components/ui/toaster'
-import useShopAdmin from '../adminPages/ShopHookAdmin'
+import { toaster } from '../ui/toaster'
+import useShopAdmin from '../shop/ShopHookAdmin'
 import { X, Star } from 'lucide-react'
 
 interface ImagePreview {

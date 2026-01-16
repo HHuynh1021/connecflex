@@ -1,18 +1,11 @@
 import { useEffect, useState } from "react"
 import { 
     Box, 
-    Heading, 
-    Image, 
     Text, 
-    Wrap, 
     Center, 
     Spinner,
-    IconButton,
-    HStack,
-    Badge,
 } from "@chakra-ui/react"
 import { useParams } from "react-router"
-import { ChevronLeft, ChevronRight } from "lucide-react"
 import {apiPublic} from "../../services/api"
 
 interface ProductImage {
@@ -24,12 +17,22 @@ interface ProductImage {
 
 interface Product {
     id: string
-    name: string
-    shop_id: string
-    images: ProductImage[]  // ← Include images in the Product interface
-    description: string
-    price: string
-    category: string
+    name: string;
+    shop_id: string;
+    description: string;
+    price: string;
+    new_price: string;
+    discount_end_at: string;
+    currency_unit: string;
+    condition: string
+    guaranty: string
+    color: string;
+    dimension: string;
+    weight: string;
+    other: string;
+    category: string;
+    image: string;
+    shop_owner_id: string
 }
 
 const useProduct = () => {

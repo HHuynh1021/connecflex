@@ -9,14 +9,15 @@ import ResetPassword from "./auths/ResetPassword"
 import Activate from "./auths/Activate"
 import ResetPasswordConfirm from "./auths/ResetPasswordConfirm"
 import ShopListPage from "./publicPages/ShopListPage"
-import AddProducts from "./adminPages/AddProducts"
+import AddProducts from "./components/products/AddProducts"
 import ProductDetailByShop from "./components/products/ProductDetailByShop"
-import ShopProducts from "./adminPages/ShopProducts"
+import ShopProducts from "./components/products/ShopProducts"
 import ProductListPage from "./publicPages/ProductListPage"
 import HomePage from "./publicPages/HomePage"
 import LoginPage from "./auths/LoginPage"
-import OrderList from "./adminPages/OrderList"
+import OrderList from "./components/orders/OrderList"
 import AdminHomePage from "./adminPages/AdminHomePage"
+import ProductPage from "./adminPages/ProductPage"
 
 function App() {
 
@@ -44,9 +45,10 @@ function App() {
         <Route path="/management" element={<PrivateRoute element={<ShopAdmin/>}/>}>
           <Route index element={<AdminHomePage/>}/>
           <Route path="/management/admin-home" element={<AdminHomePage/>}/>
+          <Route path="/management/shop/orders" element={<OrderList/>}/>
           <Route path="/management/shop-info" element={<ShopInfo/>}/>
           <Route path="/management/shop-product/add-product" element={<AddProducts/>}/>
-          <Route path="/management/shop-product" element={<ShopProducts/>}/>
+          <Route path="/management/shop-product" element={<ProductPage/>}/>
           <Route path="/management/order-list" element={<OrderList/>}/>
         </Route>
       </Routes>

@@ -1,8 +1,8 @@
 import {useEffect, useState} from 'react'
-import api from '../services/api'
+import api from '../../services/api'
 import { useSelector, useDispatch } from 'react-redux'
 import type { AppDispatch } from '../services/store'
-import useAccessToken from '../services/token'
+import useAccessToken from '../../services/token'
 
 interface ShopDataProps {
     id: string

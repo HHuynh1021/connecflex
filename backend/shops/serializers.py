@@ -11,11 +11,12 @@ class ShopSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Shop
-        fields = (
-            "id", "name", "email", "street", "province", "city",
-            "state", "zipcode", "country", "phone", "description",
-            "industry", "logo", "banner", "template", "address",
-        )
+        # fields = (
+        #     "id", "name", "email", "street", "province", "city",
+        #     "state", "zipcode", "country", "phone", "description",
+        #     "industry", "logo", "banner", "template", "address",
+        # )
+        fields = "__all__"
         read_only_fields = ('id',)
 
     def get_address(self, obj):
@@ -45,16 +46,19 @@ class ProductSerializer(serializers.ModelSerializer):
     discount = serializers.SerializerMethodField()
     shop_city = serializers.SerializerMethodField()
     current_price = serializers.SerializerMethodField()
-    currency_unit = serializers.SerializerMethodField()
-
+    primary_image = serializers.SerializerMethodField()
     class Meta:
         model = Product
         fields = "__all__"
         read_only_fields = ('id',)
-    def get_currency_unit(self, obj):
-        return obj.product.currency_unit
+
     def get_shop_name(self, obj):
         return obj.shop_id.name
+    def get_primary_image(self, obj):
+        primary_image = obj.images.first()
+        # if primary_image:
+            # return primary_image.image.url
+        return primary_image.image.url
 
     def get_shop_address(self, obj):
         if not obj.shop_id:

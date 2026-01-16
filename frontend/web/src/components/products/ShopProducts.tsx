@@ -1,12 +1,12 @@
 import {useEffect, useState, useRef} from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
-import useAccessToken from '../services/token'
-import api from '../services/api'
+import useAccessToken from '../../services/token'
+import api from '../../services/api'
 import { Box, Text, Stack, Input, Textarea, Button, Spinner, Heading, Separator,
     Group, Image, HStack, Wrap } from '@chakra-ui/react'
 import { Field } from '@chakra-ui/react/field'
-import { toaster } from '../components/ui/toaster'
+import { toaster } from '../ui/toaster'
 import formatDate from '@/components/formatDate'
 
 interface ProductImage {

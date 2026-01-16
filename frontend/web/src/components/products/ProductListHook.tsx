@@ -12,13 +12,24 @@ interface ProductImage {
 
 interface Product {
     id: string
-    name: string
-    shop_id: string
-    images: ProductImage[]  // ← Include images in the Product interface
-    description: string
-    price: string
-    category: string
-    address: string
+    name: string;
+    quantity: number
+    shop_id: string;
+    description: string;
+    price: string;
+    new_price: string;
+    discount_end_at: string;
+    currency_unit: string;
+    condition: string
+    guaranty: string
+    color: string;
+    dimension: string;
+    weight: string;
+    other: string;
+    category: string;
+    image: string;
+    shop_owner_id: string
+    primary_image: string
 }
 const useProductList = () => {
     const [products, setProducts] = useState<Product[]>([])

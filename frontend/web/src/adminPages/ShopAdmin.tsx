@@ -9,7 +9,7 @@ import { Box, HStack, Button, Text, IconButton, Menu, Avatar, Portal} from '@cha
 import { LuMoon, LuSun } from "react-icons/lu"
 import { useColorMode } from '../components/ui/color-mode'
 import { GiHamburgerMenu } from "react-icons/gi";
-import useShopAdmin from './ShopHookAdmin'
+import useShopAdmin from '@/components/shop/ShopHookAdmin'
 import LoginPage from '@/auths/LoginPage'
 
 interface ShopDataProps {
@@ -75,6 +75,7 @@ const ShopAdmin:React.FC = () => {
                         shadow={"2xl"} px={'20px'} py={"10px"} rounded={"7px"}>
 
                         <NavLink to={"admin-home"}>Home</NavLink>
+                        <NavLink to={"shop/orders"}>Orders</NavLink>
                         <NavLink to={"shop-info"}>Shop</NavLink>
                         <NavLink to={"shop-product"}>Products</NavLink>
                         <HStack gap={"20px"}>

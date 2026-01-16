@@ -11,7 +11,7 @@ import {
   YAxis,
 } from "recharts"
 import { ResponsiveContainer } from "recharts"
-import useOrder from './OrderHook'
+import useOrder from '../orders/OrderHook'
 import { Box, Heading, Stack } from '@chakra-ui/react'
 interface OrderProp {
     id: string
@@ -34,7 +34,7 @@ interface OrderProp {
     product_property: string
     product_price: number
 }
-const SaleChart = () => {
+const SaleBarChart = () => {
     const {orders, loading, error} = useOrder()
 
     const unit = orders.find((o: OrderProp) => o.currency_unit)
@@ -73,38 +73,15 @@ const SaleChart = () => {
         data: data,
         series: series
     })
-//Chartlist display the top sale of products: 
-    const orderTopSale: {[product: string]: number} = {}
-    orders.forEach((ord: OrderProp) => {
-        const product_name = ord.product_name
-        if (!orderTopSale[product_name]) {
-            orderTopSale[product_name] = 0
-        }
-        orderTopSale[product_name] += Number(ord.order_total)
-    })
-
-    const dataList = Object.entries(orderTopSale)
-        .map(([product, total]) => ({
-            name: product,
-            value: Number(total)
-    }))
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 10)
-
-    const chartList = useChart<BarListData>({
-        sort: { by: "value", direction: "desc" },
-        data: dataList,
-        series: [{name: 'name', color: "teal.subtle"}]
-    })
 
     if (loading) return <div>Loading...</div>
     if (error) return <div>Error loading orders</div>
     if (data.length === 0) return <div>No data available</div>
 
     return (
-        <Box w={"100%"}>
-            <Heading>Amount of products sold per month: </Heading>
-            <Chart.Root w={{base:"100%", md: "100%"}} maxH={"sm"} chart={chart} border={"1px solid"} rounded={"5px"} p={"20px"}>
+        <Box >
+            <Heading p={"20px"} textAlign={"center"} fontSize={{base:'14px', md:"18px"}}>Quantity of products sold per month: </Heading>
+            <Chart.Root p={"20px"} mt={"10px"} maxH={"400px"} chart={chart} shadow={"2xl"} rounded={"5px"}>
                 <BarChart data={chart.data} barGap={5}>
                     <CartesianGrid stroke={chart.color("border.muted")} vertical={false} />
                     <XAxis
@@ -146,23 +123,7 @@ const SaleChart = () => {
                     ))}
                 </BarChart>
             </Chart.Root>
-            <Stack gap={"10px"} flexDirection={{base:'column', md:'row'}}>
-                <Box w={{base:"100%", md: "30%"}}>
-                    <Heading>Top sales</Heading>
-                    <BarList.Root  p={"10px"} chart={chartList} border={"1px solid"} rounded={"5px"}>
-                        <BarList.Content>
-                            <BarList.Label title="Products" flex="1">
-                                <BarList.Bar/>
-                            </BarList.Label>
-                            <BarList.Label title="Total Amount" titleAlignment="end">
-                                <BarList.Value valueFormatter={(value) => value.toLocaleString()}/>
-                            </BarList.Label>
-                                
-                        </BarList.Content>
-                    </BarList.Root>
-                </Box>
-            </Stack>
         </Box>
     )
 }
-export default SaleChart
+export default SaleBarChart
