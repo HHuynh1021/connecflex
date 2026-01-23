@@ -14,9 +14,9 @@ interface Product {
     shop_id: string
     images: ProductImage[]
     description: string
-    price: string
+    price: number
+    new_price: number
     category: string
-    new_price: string
     discount_end_at: string
     currency_unit: string
 }
@@ -51,22 +51,20 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                     w="180px"
                     fit={"fill"}
                 />
-                <Heading fontSize={"22px"}>{product.name}</Heading>
-                {(parseFloat(product.new_price) > 0) ? (
+                <Heading fontSize={"16px"}>{product.name}</Heading>
+                {product.new_price && product.new_price > 0 ? (
                     <Box>
                         <Avatar.Root position={"absolute"} top={0} right={0}>
                             <Avatar.Image src="https://img.icons8.com/color/48/discount--v1.png"/>
                         </Avatar.Root>
                         <HStack fontWeight={"bold"} color={"red"}>
-                            <Text>Price: {product.new_price}</Text>
-                            <Text>{product.currency_unit}</Text>
+                            <Text>Price: {product.new_price} {product.currency_unit}</Text>
                         </HStack>
-                        <Text fontSize={"14px"} fontWeight={"bold"} textDecor={"line-through"}>Normal Price: {product.price} €</Text>
+                        <Text fontSize={"12px"} fontWeight={"bold"} textDecor={"line-through"}>Normal Price: {product.price} €</Text>
                     </Box>
                 ):(
                     <HStack fontWeight={"bold"}>
-                        <Text>Price: {product.price}</Text>
-                        <Text>{product.currency_unit}</Text>
+                        <Text>Price: {product.price} {product.currency_unit}</Text>
                     </HStack>
                 )}
             </Box>

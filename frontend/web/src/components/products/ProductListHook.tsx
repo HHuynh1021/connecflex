@@ -13,21 +13,17 @@ interface ProductImage {
 interface Product {
     id: string
     name: string;
-    quantity: number
     shop_id: string;
     description: string;
-    price: string;
-    new_price: string;
+    quantity: number;
+    price: number;
+    new_price: number;
     discount_end_at: string;
     currency_unit: string;
-    condition: string
-    guaranty: string
-    color: string;
-    dimension: string;
-    weight: string;
-    other: string;
-    category: string;
-    image: string;
+    condition: string;
+    warranty: string;
+    category: string[]; // Array of category IDs
+    properties: string[]; // Array of property IDs
     shop_owner_id: string
     primary_image: string
 }
@@ -47,7 +43,7 @@ const useProductList = () => {
             // Handle response structure
             const data = Array.isArray(res.data) ? res.data : (Array.isArray(res.data[0]) ? res.data[0] : [res.data])
             
-            console.log("Filtered products:", data)
+            // console.log("Filtered products:", data)
             setProducts(data)
         } catch (err: any) {
             console.error("Failed to fetch products:", err)

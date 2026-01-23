@@ -1,10 +1,41 @@
 from decimal import Decimal
+from itertools import count
 
 from rest_framework import serializers
 
 from customers.serializers import GuestUserSerializer
-from shops.models import Shop, Product, ProductImage, OrderProduct
+from shops.models import ProductCategory, ProductProperty, ProductPropertyValue, Shop, Product, ProductImage, OrderProduct
 
+class ProductCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductCategory
+        fields = '__all__'
+        read_only_fields = ('id',)
+class ProductPropertySerializer(serializers.ModelSerializer):
+    """
+    Serializer for ProductProperty model with values array.
+    Example: {
+        "id": "prop-123",
+        "name": "Color",
+        "values": ["red", "blue", "black", "white"],
+        "description": "Available colors",
+        "created_at": "2026-01-22T10:00:00Z"
+    }
+    """
+    class Meta:
+        model = ProductProperty
+        fields = ['id', 'name', 'values', 'description', 'created_at']
+        read_only_fields = ('id', 'created_at')
+    
+    def validate_values(self, value):
+        """Ensure values is a list and contains no empty strings"""
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Values must be a list")
+        # Filter out empty strings
+        cleaned_values = [v.strip() for v in value if v and v.strip()]
+        if not cleaned_values:
+            raise serializers.ValidationError("Values list cannot be empty")
+        return cleaned_values
 
 class ShopSerializer(serializers.ModelSerializer):
     address = serializers.SerializerMethodField()
@@ -36,7 +67,17 @@ class ShopSerializer(serializers.ModelSerializer):
 class ProductImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductImage
-        fields = ['id', 'image', 'product_id', 'is_primary', 'order', 'created_at']
+        fields = "__all__"
+
+
+class ProductPropertyValueSerializer(serializers.ModelSerializer):
+    property_id = serializers.CharField(source='property.id', read_only=True)
+    property_name = serializers.CharField(source='property.name', read_only=True)
+    
+    class Meta:
+        model = ProductPropertyValue
+        fields = ['id', 'property_id', 'property_name', 'value']
+        read_only_fields = ['id']
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -47,18 +88,37 @@ class ProductSerializer(serializers.ModelSerializer):
     shop_city = serializers.SerializerMethodField()
     current_price = serializers.SerializerMethodField()
     primary_image = serializers.SerializerMethodField()
+    new_price = serializers.SerializerMethodField()
+    # Properties with custom values
+    property_values = ProductPropertyValueSerializer(many=True, read_only=True)
+    properties_input = serializers.ListField(
+        child=serializers.DictField(),
+        write_only=True,
+        required=False,
+        help_text="List of {property_id: 'id', value: 'custom value'}"
+    )
+    category = serializers.PrimaryKeyRelatedField(many=True, queryset=ProductCategory.objects.all())
+    
     class Meta:
         model = Product
         fields = "__all__"
         read_only_fields = ('id',)
-
+    
+    def get_new_price(self, obj):
+        """Return 0 if discount is expired, otherwise return actual new_price"""
+        if obj.is_discount_expired():
+            return 0
+        return float(obj.new_price) if obj.new_price else 0
     def get_shop_name(self, obj):
         return obj.shop_id.name
     def get_primary_image(self, obj):
-        primary_image = obj.images.first()
-        # if primary_image:
-            # return primary_image.image.url
-        return primary_image.image.url
+        primary_image = obj.images.filter(is_primary=True).first()
+        if primary_image and primary_image.media:
+            return primary_image.media.url
+        first_image = obj.images.first()
+        if first_image and first_image.media:
+            return first_image.media.url
+        return None
 
     def get_shop_address(self, obj):
         if not obj.shop_id:
@@ -74,16 +134,84 @@ class ProductSerializer(serializers.ModelSerializer):
         return ", ".join(filter(None, address_parts))
 
     def get_discount(self, obj):
-        current_price = obj.current_new_price
-        if current_price > 0 and obj.price > current_price:
-            return obj.price - current_price
+        # Use new_price field and check if discount is still valid
+        if obj.new_price and obj.new_price > 0 and not obj.is_discount_expired():
+            if obj.price > obj.new_price:
+                return float(obj.price - obj.new_price)
         return 0
 
     def get_shop_city(self, obj):
         return obj.shop_id.city
 
     def get_current_price(self, obj):
-        return obj.current_new_price
+        return float(obj.current_price)
+    
+    def create(self, validated_data):
+        """Handle creating product with categories and properties"""
+        categories = validated_data.pop('category', [])
+        properties_input = validated_data.pop('properties_input', [])
+        
+        # Create the product
+        product = Product.objects.create(**validated_data)
+        
+        # Add categories
+        if categories:
+            product.category.set(categories)
+        
+        # Add property values
+        if properties_input:
+            from shops.models import ProductPropertyValue, ProductProperty
+            for prop_data in properties_input:
+                property_id = prop_data.get('property_id')
+                value = prop_data.get('value')
+                if property_id and value:
+                    try:
+                        prop = ProductProperty.objects.get(id=property_id)
+                        ProductPropertyValue.objects.create(
+                            product=product,
+                            property=prop,
+                            value=value
+                        )
+                    except ProductProperty.DoesNotExist:
+                        pass
+        
+        return product
+    
+    def update(self, instance, validated_data):
+        """Handle updating product with categories and properties"""
+        categories = validated_data.pop('category', None)
+        properties_input = validated_data.pop('properties_input', None)
+        
+        # Update regular fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        
+        # Update many-to-many relationships if provided
+        if categories is not None:
+            instance.category.set(categories)
+        
+        # Update property values
+        if properties_input is not None:
+            from shops.models import ProductPropertyValue, ProductProperty
+            # Clear existing property values
+            instance.property_values.all().delete()
+            # Add new property values
+            for prop_data in properties_input:
+                property_id = prop_data.get('property_id')
+                value = prop_data.get('value')
+                if property_id and value:
+                    try:
+                        prop = ProductProperty.objects.get(id=property_id)
+                        ProductPropertyValue.objects.create(
+                            product=instance,
+                            property=prop,
+                            value=value
+                        )
+                    except ProductProperty.DoesNotExist:
+                        pass
+        
+        return instance
 
 
 # Orderserializer
@@ -98,11 +226,13 @@ class OrderSerializer(serializers.ModelSerializer):
     customer_address = serializers.SerializerMethodField()
     customer_phone = serializers.SerializerMethodField()
     customer_email = serializers.SerializerMethodField()
-
+    # monthly_sales = serializers.SerializerMethodField()
+    monthly_sales = serializers.ReadOnlyField()
     class Meta:
         model = OrderProduct
         fields = "__all__"
         read_only_fields = ('id',)
+
 
     def get_shop_name(self, obj):
         return obj.shop.name if obj.shop else None
@@ -128,27 +258,6 @@ class OrderSerializer(serializers.ModelSerializer):
             obj.customer.country,
         ]
         return ", ".join(filter(None, address))
-    # def get_product_property(self, obj):
-    #     property = [
-    #         f"color: {obj.product.color}",
-    #         f"Dimension: {obj.product.dimension}",
-    #         f"Weight: {obj.product.weight}",
-    #         f"Other: {obj.product.other}",
-    #     ]
-    #     return "\n ".join(filter(None, property))
-
-    # def get_product_property(self, obj):
-    #     properties = []
-    #
-    #     if obj.product.color:
-    #         properties.append(f"Color: {obj.product.color}")
-    #     if obj.product.dimension:
-    #         properties.append(f"Dimension: {obj.product.dimension}")
-    #     if obj.product.weight:
-    #         properties.append(f"Weight: {obj.product.weight}")
-    #     if obj.product.other:
-    #         properties.append(f"Other: {obj.product.other}")
-    #     return "\n".join(properties)
 
     def get_product_property(self, obj):
         exclude_fields = ['id','shop_id', 'price', 'new_price', 'updated_at', 'discount_end_at', 'currency_unit', 'created_at']
@@ -173,6 +282,19 @@ class OrderSerializer(serializers.ModelSerializer):
     def get_customer_email(self, obj):
         if obj.customer.email:
             return obj.customer.email
-
+    # def get_monthly_sales(self, obj):
+    #     from django.db.models import Sum
+    #     from datetime import datetime
+    #
+    #     if obj.order_status == 'Completed':
+    #         order_date = obj.order_date
+    #         monthly_sales = OrderProduct.objects.filter(
+    #             shop=obj.shop,
+    #             order_status='Completed',
+    #             order_date__year=order_date.year,
+    #             order_date__month=order_date.month
+    #         ).aggregate(total=Sum('order_total'))['total'] or 0
+    #         return monthly_sales
+    #     return 0
 
 

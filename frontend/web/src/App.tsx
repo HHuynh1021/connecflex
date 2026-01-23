@@ -11,13 +11,13 @@ import ResetPasswordConfirm from "./auths/ResetPasswordConfirm"
 import ShopListPage from "./publicPages/ShopListPage"
 import AddProducts from "./components/products/AddProducts"
 import ProductDetailByShop from "./components/products/ProductDetailByShop"
-import ShopProducts from "./components/products/ShopProducts"
 import ProductListPage from "./publicPages/ProductListPage"
 import HomePage from "./publicPages/HomePage"
 import LoginPage from "./auths/LoginPage"
 import OrderList from "./components/orders/OrderList"
 import AdminHomePage from "./adminPages/AdminHomePage"
 import ProductPage from "./adminPages/ProductPage"
+import ProductUpdate from "./components/products/ProductUpdate"
 
 function App() {
 
@@ -31,8 +31,7 @@ function App() {
           <Route path="/home/shop-list" element={<ShopListPage/>}/>
           <Route path="/home/product-list/" element={<ProductListPage/>}/>
           <Route path="/shop-page/templates/:shopId" element={<ShopDetailPage/>}/>
-          <Route path="/product-page/:shopId/:productId" element={<ProductDetailByShop/>}/>
-          
+          <Route path="/product-page/:shopId/:productId" element={<ProductDetailByShop/>}/>         
         </Route>
 
         {/* auth paths */}
@@ -49,6 +48,8 @@ function App() {
           <Route path="/management/shop-info" element={<ShopInfo/>}/>
           <Route path="/management/shop-product/add-product" element={<AddProducts/>}/>
           <Route path="/management/shop-product" element={<ProductPage/>}/>
+          <Route path="/management/products/add-new-products" element={<AddProducts/>}/>
+          <Route path="/management/products/update/:productId" element={<ProductUpdate/>}/>
           <Route path="/management/order-list" element={<OrderList/>}/>
         </Route>
       </Routes>

@@ -1,18 +1,7 @@
-import React from 'react'
-import { BarList, type BarListData, Chart, useChart } from "@chakra-ui/charts"
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  LabelList,
-  Legend,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts"
-import { ResponsiveContainer } from "recharts"
+import { BarList, type BarListData, useChart } from "@chakra-ui/charts"
 import useOrder from '../orders/OrderHook'
-import { Box, Heading, Stack } from '@chakra-ui/react'
+import { Box, Heading, } from '@chakra-ui/react'
+
 interface OrderProp {
     id: string
     product: string
@@ -37,7 +26,7 @@ interface OrderProp {
 const SaleBarList = () => {
     const {orders, loading, error} = useOrder()
 
-    const unit = orders.find((o: OrderProp) => o.currency_unit)
+    const unit = orders.map((ord: OrderProp) => ord.currency_unit)[0]
 
 //Chartlist display the top sale of products: 
     const orderTopSale: {[product: string]: number} = {}
@@ -46,7 +35,9 @@ const SaleBarList = () => {
         if (!orderTopSale[product_name]) {
             orderTopSale[product_name] = 0
         }
-        orderTopSale[product_name] += Number(ord.order_total)
+        if(ord.order_status === "Completed"){
+            orderTopSale[product_name] += Number(ord.order_total)
+        }
     })
 
     const dataList = Object.entries(orderTopSale)
@@ -65,17 +56,17 @@ const SaleBarList = () => {
 
     if (loading) return <div>Loading...</div>
     if (error) return <div>Error loading orders</div>
-    if (dataList.length === 0) return <div>No data available</div>
+    if (dataList.length === 0) return <div>No product was sold so far</div>
 
     return (
-        <Box>
-            <Heading p={"20px"} textAlign={"center"} fontSize={{base:'14px', md:"18px"}}>Top-selling products by revenue</Heading>
-            <BarList.Root p={"20px"} my={"10px"} chart={chartList} shadow={"2xl"} rounded={"5px"}>
+        <Box shadow={"sm"} rounded={"5px"} px={"10px"}>
+            <Heading py={"20px"} textAlign={"center"} fontSize={{base:'14px', md:"18px"}}>Top-selling products by revenue</Heading>
+            <BarList.Root p={"20px"} my={"10px"} chart={chartList}>
                 <BarList.Content>
                     <BarList.Label title="Products" flex="1">
                         <BarList.Bar/>
                     </BarList.Label>
-                    <BarList.Label title="Total Amount" titleAlignment="end">
+                    <BarList.Label title={`Total Amount in ${unit}`} titleAlignment="end">
                         <BarList.Value valueFormatter={(value) => value.toLocaleString()}/>
                     </BarList.Label>                        
                 </BarList.Content>

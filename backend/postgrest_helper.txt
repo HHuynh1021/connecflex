@@ -1,0 +1,7 @@
+psql -U kingzarckier -d connecflex -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public; GRANT ALL ON SCHEMA public TO kingzarckier; GRANT ALL ON SCHEMA public TO public;"
+rm -f accounts/migrations/0*.py
+rm -f customers/migrations/0*.py
+rm -f shops/migrations/0*.py
+python3 manage.py makemigrations
+python3 manage.py migrate
+python3 manage.py createsuperuser

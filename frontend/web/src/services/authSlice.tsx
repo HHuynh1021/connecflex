@@ -35,7 +35,6 @@ interface AuthState {
 }
 
 interface RegisterData {
-  shop_name?: string;
   role: string;
   first_name: string;
   last_name: string;

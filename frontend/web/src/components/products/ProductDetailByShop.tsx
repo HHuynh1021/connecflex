@@ -25,7 +25,7 @@ interface CountdownTimerProps {
 }
 interface ProductImage {
     id: string
-    image: string
+    media: string
     is_primary: boolean
     order: number
 }
@@ -35,18 +35,17 @@ interface Product {
     name: string;
     shop_id: string;
     description: string;
+    quantity: number;
     price: number;
     new_price: number;
     discount_end_at: string;
     currency_unit: string;
-    condition: string
-    guaranty: string
-    color: string;
-    dimension: string;
-    weight: string;
-    other: string;
-    category: string;
-    discount:number
+    condition: string;
+    warranty: string;
+    category: string[]; // Array of category IDs
+    properties: string[]; // Array of property IDs
+    shop_owner_id: string
+    primary_image: string
     images: ProductImage[]
 }
 interface OtherProduct {
@@ -55,7 +54,9 @@ interface OtherProduct {
     shop_id: string
     images: ProductImage[]
     description: string
-    price: string
+    price: number
+    new_price: number;
+    currency_unit: string;
     category: string
 }
 
@@ -111,6 +112,14 @@ const ProductDetailByShop: React.FC = () => {
 
     const {customers, loading} = useCustomer()
 
+    // Helper function to construct full image URL
+    const getImageUrl = (imagePath: string | null | undefined): string | null => {
+        if (!imagePath) return null;
+        if (imagePath.startsWith('http')) return imagePath;
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+        return `${baseUrl}${imagePath}`;
+    }
+
     const [otherProducts, setOtherProducts] = useState<OtherProduct[]>([])
     const [products, setProducts] = useState<Product[]>([])
     const [selectedImageId, setSelectedImageId] = useState<string>("")
@@ -122,6 +131,7 @@ const ProductDetailByShop: React.FC = () => {
     const [error, setError] = useState<string>("")
     const [currentImageIndex, setCurrentImageIndex] = useState<{ [key: string]: number }>({})
     const [quantity, setQuantity] = useState<number>(1)
+    const [orderNumber, setOrderNumber] = useState<string>("")
     
     const navigate = useNavigate()
     const dispatch = useDispatch()
@@ -138,6 +148,10 @@ const ProductDetailByShop: React.FC = () => {
         dispatch(getUserInfo() as any);
         }
     }, [user, userInfo, navigate, dispatch]);
+
+    useEffect(() => {
+        setOrderNumber(`ORD-${Math.random().toString(36).substr(2,9)}`.toUpperCase())
+    }, []);
     
     const openGoogleMaps = (address: string) => {
         const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`
@@ -150,7 +164,7 @@ const ProductDetailByShop: React.FC = () => {
             const res = await axios.get(url)
             const data = res.data
             const filter = data.filter((p: Product) => p.id === productId)
-            console.log("product detail data: ", filter)
+            // console.log("product detail data: ", filter)
             setProducts(filter)
             const otherProducts = data.filter((o: Product) => o.id !== productId)
             setOtherProducts(otherProducts)
@@ -264,12 +278,11 @@ const ProductDetailByShop: React.FC = () => {
         Navigate(`/shop-page/templates/${shopId}`)
     }
     
-    const orderNumber = `ORD-${Math.random().toString(36).substr(2,9)}`.toUpperCase()
-    console.log("orderNumber: ", orderNumber )
     const buyProducts = async (e: React.FormEvent, product: string, shop: string, customer: string, price: number,  quantity: number, order_number: string) => {
         e.preventDefault()
-        if (!userInfo){
+        if (customer === undefined || !userInfo || !user || !accessToken){
             alert("Please Login to buy products")
+            // Navigate("/login")
         }
         if (quantity <= 0) {
             alert("Please enter a valid quantity")
@@ -296,23 +309,13 @@ const ProductDetailByShop: React.FC = () => {
                 },
             })
             alert("Add the product successfully")
-            // setFormData({
-            //     product: "",
-            //     shop: "",
-            //     customer: "",
-            //     shop_name: "",
-            //     product_name: "",
-            //     customer_name: "",
-            //     order_number: "",
-            //     order_status: "",
-            //     order_data: "",
-            //     order_updated_at: "",
-            // })
+            setQuantity(1)
         }catch(error: any){
             console.error("buyProduct error", error.response.data || error.message)
         }
     }
-    const customer = userInfo ? customers.find((c:CustomerProp) => c.user === userInfo.id) : undefined
+    const customer = userInfo ? (customers.find((c:any) => c.user === userInfo.id) as CustomerProp | undefined) : undefined
+    // console.log("customer: ", customer)
 
     return (
         <Container maxW={'1100px'} p={"10px"}>
@@ -324,11 +327,11 @@ const ProductDetailByShop: React.FC = () => {
                             {/* <NavBarShop logo={shop.logo} name={shop.name} /> */}
                             <HStack justifyContent={"center"}>
                                 <Avatar.Root>
-                                    <Avatar.Image src={shop.logo}/>
+                                    <Avatar.Image src={getImageUrl(shop.logo)}/>
                                 </Avatar.Root>
                                 <Heading>{shop.name}</Heading>
                             </HStack>
-                            <Image src={shop.banner} maxH={"200px"} w={"100%"} fit={"fill"} rounded={"5px"}/>
+                            <Image src={getImageUrl(shop.banner)} maxH={"200px"} w={"100%"} fit={"fill"} rounded={"5px"}/>
                         </Box>
                     ))}
                 </Box>
@@ -343,7 +346,7 @@ const ProductDetailByShop: React.FC = () => {
                             return (
                                 <Wrap key={p.id} justify={{md: "space-between", base: "center"}} maxW={"100%"}>
                                     {/* Left Side - Images */}
-                                    <HStack flexBasis={{base:"100%", md: "49%"}} p={"10px"} rounded={'7px'} h={{md: "520px", base:"420px"}}
+                                    {/* <HStack flexBasis={{base:"100%", md: "49%"}} p={"10px"} rounded={'7px'} h={{md: "520px", base:"420px"}}
                                         shadow={"2px 2px 25px 2px rgb(75, 75, 79)"}>
                                             {sortedImages.length > 1 && (
                                                 <VStack h={"inherit"} py={"10px"} 
@@ -386,31 +389,205 @@ const ProductDetailByShop: React.FC = () => {
                                                 </Box>
                                             )}
                                         
-                                    </HStack>
+                                    </HStack> */}
+                                    <Box flexBasis={{base:"100%", md: "45%"}} maxH={{md: "520px", base:"720px"}}>
+                                        {p.images && p.images.length > 0 ? (
+                                            (() => {
+                                                const currentImage = getCurrentImageOtherProduct(p.id, p.images)
+                                                const hasMultipleImages = p.images.length > 1
+                                                const currentIndex = currentImageIndex[p.id] || 0
+                    
+                                                return (
+                                                    <Box 
+                                                        border="1px solid"
+                                                        rounded="5px"
+                                                        overflow="hidden"
+                                                        shadow="md"
+                                                        w={"100%"}
+                                                        h={"100%"}
+                                                    >
+                                                        {/* Image Gallery */}
+                                                        <Box position="relative" w={{base:"100%", md: "100%"}} h={{md: "100%", base:"400px"}}>
+                                                        
+                                                            {currentImage ? (
+                                                                <Image 
+                                                                    w="100%" 
+                                                                    h="100%" 
+                                                                    src={getImageUrl(currentImage.media)} 
+                                                                    alt={p.name}
+                                                                    fit={"fill"}
+                                                                />
+                                                            ) : (
+                                                                <Center h="100%">
+                                                                    <Text color="gray.500">No Image</Text>
+                                                                </Center>
+                                                            )}
+                    
+                                                            {/* Navigation Arrows - Only show if multiple images */}
+                                                            {hasMultipleImages && (
+                                                                <>
+                                                                    <IconButton
+                                                                        aria-label="Previous image"
+                                                                        position="absolute"
+                                                                        left={2}
+                                                                        top="50%"
+                                                                        transform="translateY(-50%)"
+                                                                        onClick={(e) => handlePrevImage(e, p.id, p.images)}
+                                                                        size="sm"
+                                                                        colorPalette="blackAlpha"
+                                                                        variant="solid"
+                                                                        bg="blackAlpha.600"
+                                                                        color="white"
+                                                                        _hover={{ bg: "blackAlpha.800" }}
+                                                                    >
+                                                                        <ChevronLeft size={20} />
+                                                                    </IconButton>
+                    
+                                                                    <IconButton
+                                                                        aria-label="Next image"
+                                                                        position="absolute"
+                                                                        right={2}
+                                                                        top="50%"
+                                                                        transform="translateY(-50%)"
+                                                                        onClick={(e) => handleNextImage(e, p.id, p.images)}
+                                                                        size="sm"
+                                                                        colorPalette="blackAlpha"
+                                                                        variant="solid"
+                                                                        bg="blackAlpha.600"
+                                                                        color="white"
+                                                                        _hover={{ bg: "blackAlpha.800" }}
+                                                                    >
+                                                                        <ChevronRight size={20} />
+                                                                    </IconButton>
+                                                                </>
+                                                            )}
+                    
+                                                            {/* Image Counter */}
+                                                            {hasMultipleImages && (
+                                                                <Box
+                                                                    position="absolute"
+                                                                    top={2}
+                                                                    right={2}
+                                                                    bg="blackAlpha.700"
+                                                                    color="white"
+                                                                    px={2}
+                                                                    py={1}
+                                                                    borderRadius="md"
+                                                                    fontSize="sm"
+                                                                >
+                                                                    {currentIndex + 1} / {p.images.length}
+                                                                </Box>
+                                                            )}
+                    
+                                                            {/* Primary Badge */}
+                                                            {currentImage?.is_primary && (
+                                                                <Badge
+                                                                    position="absolute"
+                                                                    top={2}
+                                                                    left={2}
+                                                                    colorPalette="blue"
+                                                                >
+                                                                    Primary
+                                                                </Badge>
+                                                            )}
+                    
+                                                            {/* Dot Indicators */}
+                                                            {hasMultipleImages && (
+                                                                <HStack
+                                                                    position="absolute"
+                                                                    bottom={2}
+                                                                    left="50%"
+                                                                    transform="translateX(-50%)"
+                                                                    gap={2}
+                                                                >
+                                                                    {p.images.map((_, idx) => (
+                                                                        <Box
+                                                                            key={idx}
+                                                                            w="8px"
+                                                                            h="8px"
+                                                                            borderRadius="full"
+                                                                            bg={currentIndex === idx ? "white" : "whiteAlpha.500"}
+                                                                            cursor="pointer"
+                                                                            transition="all 0.2s"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation()
+                                                                                handleDotClick(p.id, idx)
+                                                                            }}
+                                                                            _hover={{ 
+                                                                                bg: currentIndex === idx ? "white" : "whiteAlpha.700",
+                                                                                transform: "scale(1.2)"
+                                                                            }}
+                                                                        />
+                                                                    ))}
+                                                                </HStack>
+                                                            )}
+                                                        </Box>
+                                                    </Box>
+                                                )
+                                            })()
+                                        ) : p.primary_image ? (
+                                            <Box 
+                                                border="1px solid"
+                                                rounded="5px"
+                                                overflow="hidden"
+                                                shadow="md"
+                                                w={"100%"}
+                                                h={"100%"}
+                                            >
+                                                <Box position="relative" w={{base:"100%", md: "100%"}} h={{md: "100%", base:"400px"}}>
+                                                    <Image 
+                                                        w="100%" 
+                                                        h="100%" 
+                                                        src={getImageUrl(p.primary_image)}
+                                                        alt={p.name}
+                                                        fit={"fill"}
+                                                    />
+                                                </Box>
+                                            </Box>
+                                        ) : (
+                                            <Center w="full" h="400px">
+                                                <Box textAlign="center">
+                                                    <Text fontSize="lg" color="gray.600" mb={2}>
+                                                        No Image Available
+                                                    </Text>
+                                                </Box>
+                                            </Center>
+                                        )}
+                                    </Box>
                                     {/* Right Side - Product Details */}
-                                    <VStack align="start" gap={"10px"} flexBasis={{base:"100%", md: "50%"}} maxH={{md: "520px", base:"720px"}}
-                                        shadow={"2px 2px 25px 2px rgb(75, 75, 79) "} rounded={'7px'} p={"10px"}>
+                                    <Stack gap={"5px"} flexBasis={{base:"100%", md: "50%"}} maxH={{md: "520px", base:"720px"}}
+                                        shadow={"sm"} rounded={'5px'} p={"20px"}>
                                         <Heading fontSize={"24px"} fontWeight={"bold"}>
                                             {p.name}
                                         </Heading>
                                         
                                         {shops && shops.map((s: ShopDataProps) => (
-                                            <Box key={s.id} border={"1px solid"} rounded={"5px"}>
-                                                <form onSubmit={(e) => buyProducts(e, p.id, s.id, customer?.id, p.new_price > 0 ? p.new_price : p.price,  quantity, orderNumber)}>
-                                                    <Input
-                                                        value={quantity}
-                                                        onChange={(e)=> setQuantity(Number(e.target.value))}
-                                                    />
-                                                    <Button type="submit">Buy this product</Button>
+                                            <Box key={s.id}>
+                                                <form onSubmit={(e) => buyProducts(e, p.id, s.id, customer?.id || "", p.new_price > 0 ? p.new_price : p.price,  quantity, orderNumber)}>
+                                                    <HStack gap={"10px"} justifyContent={"flex-start"}>
+                                                        <label htmlFor="quantiy">Qty</label>
+                                                        <Input
+                                                            value={quantity}
+                                                            type="number"
+                                                            onChange={(e)=> setQuantity(Number(e.target.value))}
+                                                            border={"1px solid"}
+                                                            w={"70px"}
+                                                            p={"5px"}
+                                                            rounded={"5px"}
+                                                            step={"1"}
+                                                            id="quantity"
+                                                        />
+                                                        <Button type="submit">Buy this product</Button>
+                                                    </HStack>
                                                 </form>
                                             </Box>
                                         ))}
-                                        <List.Root gap={2} variant={"plain"}>
+                                        <List.Root gap={2} variant={"plain"} align="center">
                                             <List.Item>
+                                                <List.Indicator color={"red"}>
+                                                    <FaShop/>
+                                                </List.Indicator>
                                                 <HStack>
-                                                    <Box color={"red"}>
-                                                        <FaShop/>
-                                                    </Box>
                                                     <Collapsible.Root>
                                                         <Collapsible.Trigger
                                                             fontSize={"16px"}
@@ -468,16 +645,11 @@ const ProductDetailByShop: React.FC = () => {
                                                 </HStack>
                                             </List.Item>
                                         </List.Root> 
-                                        {parseFloat(p.new_price) > 0 ? (
+                                        {p.new_price > 0 ? (
                                             <List.Root gap={2} variant={"plain"} align={"center"}>
                                                 <List.Item>
-                                                    <HStack fontSize="18px" fontWeight="bold" color="blue.500">
-                                                        <List.Indicator asChild color="green.500"><LuCircleCheck /></List.Indicator>
-                                                        <Text>
-                                                            Price: {p.new_price}
-                                                        </Text>
-                                                        <Text>{p.currency_unit}</Text>
-                                                    </HStack>
+                                                    <List.Indicator asChild color="red.500"><LuCircleCheck /></List.Indicator>
+                                                    <Text color={"red.500"}>Sale Price: {p.new_price} {p.currency_unit}</Text>
                                                 </List.Item>
                                                 <List.Item>
                                                     <List.Indicator asChild color="green.500"><LuCircleCheck /></List.Indicator>
@@ -485,7 +657,7 @@ const ProductDetailByShop: React.FC = () => {
                                                 </List.Item>
                                                 <List.Item>
                                                     <List.Indicator asChild color="green.500"><LuCircleCheck /></List.Indicator>
-                                                    <Text fontWeight={"bold"} color={"red.700"}>Save: {p.discount} €</Text>   
+                                                    <Text fontWeight={"bold"} color={"red.700"}>Save: {(p.price - p.new_price).toFixed(2)} €</Text>   
                                                 </List.Item>                            
                                                 <List.Item>
                                                     <List.Indicator asChild color="green.500"><LuCircleCheck /></List.Indicator>
@@ -501,13 +673,10 @@ const ProductDetailByShop: React.FC = () => {
                                                 </List.Item>
                                             </List.Root>                       
                                         ):(
-                                            <List.Root>
+                                            <List.Root variant="plain" align="center">
                                                 <List.Item>
-                                                    <HStack fontSize="18px" fontWeight="bold" color="blue.500">
-                                                        <List.Indicator asChild color="green.500"><LuCircleCheck /></List.Indicator>
-                                                        <Text>Price: {p.price}</Text>
-                                                        <Text>{p.currency_unit}</Text>
-                                                    </HStack>
+                                                    <List.Indicator asChild color="green.500"><LuCircleCheck /></List.Indicator>
+                                                    <Text color={"blue"}>Price: {p.price} {p.currency_unit}</Text>
                                                 </List.Item>
                                             </List.Root>
                                         )}  
@@ -521,46 +690,16 @@ const ProductDetailByShop: React.FC = () => {
                                                         Condition: <Strong px={"10px"}>{p.condition}</Strong>
                                                     </List.Item>
                                                 }
-                                                {p.guaranty && 
+                                                {p.warranty && 
                                                     <List.Item>
                                                         <List.Indicator asChild color="green.500"><LuCircleCheck /></List.Indicator>
-                                                        Guaranty: <Strong px={"10px"}>{p.guaranty}</Strong>
+                                                        Warranty: <Strong px={"10px"}>{p.warranty}</Strong>
                                                     </List.Item>
                                                 }
-                                                {p.color && 
-                                                    <List.Item>
-                                                        <List.Indicator asChild color="green.500"><LuCircleCheck /></List.Indicator>
-                                                        Color: <Strong px={"10px"}>{p.color}</Strong>
-                                                    </List.Item>
-                                                }
-                                                {p.weight && 
-                                                    <List.Item>
-                                                        <List.Indicator asChild color="green.500"><LuCircleCheck /></List.Indicator>
-                                                        Weight: <Strong px={"10px"}>{p.weight}</Strong>
-                                                    </List.Item>
-                                                }
-                                                {p.dimension && 
-                                                    <List.Item>
-                                                        <List.Indicator asChild color="green.500"><LuCircleCheck /></List.Indicator>
-                                                        Dimensions: <Strong px={"10px"}>{p.dimension}</Strong>
-                                                    </List.Item>
-                                                }
-                                                {p.other && 
-                                                    <List.Item>
-                                                        <List.Indicator asChild color="green.500"><LuCircleCheck /></List.Indicator>
-                                                        Others: <Strong px={"10px"}>{p.other}</Strong>
-                                                    </List.Item>
-                                                }
-                                                {/* {p.description && 
-                                                    <List.Item overflow={"hidden"} h={"50px"}>
-                                                        <List.Indicator asChild color="green.500"><LuCircleCheck/></List.Indicator>
-                                                        {p.description}
-                                                    </List.Item>
-                                                } */}
                                             </List.Root>
                                         </Box>
                                         <Text onClick={MoreDetail} cursor={"pointer"} fontStyle={"italic"} fontWeight={"bold"}>more details ...</Text>
-                                    </VStack>
+                                    </Stack>
                                     {isMore && (
                                         <Box p={"20px"} shadow={"2px 2px 25px 2px rgb(75, 75, 79) "} rounded={"7px"} w={"100%"}>
                                             <Text textAlign={"justify"} w={'100%'}>{p.description}</Text>
@@ -578,183 +717,39 @@ const ProductDetailByShop: React.FC = () => {
                     )}
                 </Box>
                 {/* other products */}
-                <Box shadow={"2px 2px 25px 2px rgb(75, 75, 79) "} rounded={"7px"} p={"10px"}> 
+                <Box shadow={"sm"} rounded={"7px"} w={"100%"}> 
                     <Heading textAlign={{base: "center", md:"start"}} p={"20px"} fontWeight={"bold"}>
                         More Products from This Shop
                     </Heading>
-                    <Wrap gap={"20px"} 
-                        justify={{md: "space-between", base:"center"}} cursor={"pointer"}>
+                    <Wrap justify={"space-evenly"}>
                         {otherProducts.length > 0 ? (
-                            otherProducts.map((product: OtherProduct) => {
-                                const currentImage = getCurrentImageOtherProduct(product.id, product.images)
-                                const hasMultipleImages = product.images && product.images.length > 1
-                                const currentIndex = currentImageIndex[product.id] || 0
-    
+                            otherProducts
+                            .filter((p: OtherProduct) => p.shop_id === shopId)
+                            .map((p: OtherProduct) => {
+                                const primaryImage = getPrimaryImage(p.images)
                                 return (
-                                    <Box 
-                                        key={product.id}
-                                        onClick={() => handleProductClick(product.id)}
-                                        border="1px solid"
-                                        rounded="5px"
-                                        overflow="hidden"
-                                        shadow="md"
-                                        transition="all 0.2s"
-                                        _hover={{ shadow: "lg", transform: "translateY(-2px)" }}
-                                        w={{base:"100%", md: "250px"}}
-                                    >
-                                        {/* Image Gallery */}
-                                        <Box position="relative">
-                                            {currentImage ? (
-                                                <Image 
-                                                    w="100%" 
-                                                    h="100%" 
-                                                    src={currentImage.image}
-                                                    alt={product.name}
-                                                    fit={"fill"}
-                                                />
-                                            ) : (
-                                                <Center h="100%">
-                                                    <Text color="gray.500">No Image</Text>
-                                                </Center>
-                                            )}
-    
-                                            {/* Navigation Arrows - Only show if multiple images */}
-                                            {hasMultipleImages && (
-                                                <>
-                                                    <IconButton
-                                                        aria-label="Previous image"
-                                                        position="absolute"
-                                                        left={2}
-                                                        top="50%"
-                                                        transform="translateY(-50%)"
-                                                        onClick={(e) => handlePrevImage(e, product.id, product.images)}
-                                                        size="sm"
-                                                        colorPalette="blackAlpha"
-                                                        variant="solid"
-                                                        bg="blackAlpha.600"
-                                                        color="white"
-                                                        _hover={{ bg: "blackAlpha.800" }}
-                                                    >
-                                                        <ChevronLeft size={20} />
-                                                    </IconButton>
-    
-                                                    <IconButton
-                                                        aria-label="Next image"
-                                                        position="absolute"
-                                                        right={2}
-                                                        top="50%"
-                                                        transform="translateY(-50%)"
-                                                        onClick={(e) => handleNextImage(e, product.id, product.images)}
-                                                        size="sm"
-                                                        colorPalette="blackAlpha"
-                                                        variant="solid"
-                                                        bg="blackAlpha.600"
-                                                        color="white"
-                                                        _hover={{ bg: "blackAlpha.800" }}
-                                                    >
-                                                        <ChevronRight size={20} />
-                                                    </IconButton>
-                                                </>
-                                            )}
-    
-                                            {/* Image Counter */}
-                                            {hasMultipleImages && (
-                                                <Box
-                                                    position="absolute"
-                                                    top={2}
-                                                    right={2}
-                                                    bg="blackAlpha.700"
-                                                    color="white"
-                                                    px={2}
-                                                    py={1}
-                                                    borderRadius="md"
-                                                    fontSize="sm"
-                                                >
-                                                    {currentIndex + 1} / {product.images.length}
+                                    <Box key={p.id} cursor={"pointer"} w={"130px"} h={"190px"} shadow={"sm"} position={"relative"}
+                                        onClick={() => handleProductClick(p.id)}>
+                                        <Box p={"5px"}>
+                                            <Image src={getImageUrl(primaryImage?.media || "")} w={"100%"} h={"130px"}/>
+                                        </Box>
+                                        {p.new_price > 0 ? (<Avatar.Root position={"absolute"} top={0} right={0}>
+                                            <Avatar.Image src="https://img.icons8.com/color/48/discount--v1.png"/>
+                                        </Avatar.Root>):("")}
+                                        <Box p={"5px"}>
+                                            {p.new_price > 0 ? (
+                                                <Box>
+                                                    <Text color={"red"}>{p.new_price} {p.currency_unit}</Text>
+                                                    <Text color={"blue"} textDecor={"line-through"}>{p.price} {p.currency_unit}</Text>
                                                 </Box>
+                                            ):(
+                                                <Text color={"blue"}>{p.price} {p.currency_unit}</Text>
                                             )}
-    
-                                            {/* Primary Badge */}
-                                            {currentImage?.is_primary && (
-                                                <Badge
-                                                    position="absolute"
-                                                    top={2}
-                                                    left={2}
-                                                    colorPalette="blue"
-                                                >
-                                                    Primary
-                                                </Badge>
-                                            )}
-    
-                                            {/* Dot Indicators */}
-                                            {hasMultipleImages && (
-                                                <HStack
-                                                    position="absolute"
-                                                    bottom={2}
-                                                    left="50%"
-                                                    transform="translateX(-50%)"
-                                                    gap={2}
-                                                >
-                                                    {product.images.map((_, idx) => (
-                                                        <Box
-                                                            key={idx}
-                                                            w="8px"
-                                                            h="8px"
-                                                            borderRadius="full"
-                                                            bg={currentIndex === idx ? "white" : "whiteAlpha.500"}
-                                                            cursor="pointer"
-                                                            transition="all 0.2s"
-                                                            onClick={() => handleDotClick(product.id, idx)}
-                                                            _hover={{ 
-                                                                bg: currentIndex === idx ? "white" : "whiteAlpha.700",
-                                                                transform: "scale(1.2)"
-                                                            }}
-                                                        />
-                                                    ))}
-                                                </HStack>
-                                            )}
-                                        </Box>
-                                        
-                                        {/* Product Details */}
-                                        <Box p={4}>
-                                            <Heading size="md" mb={2}>
-                                                {product.name}
-                                            </Heading>
-                                            
-                                            {product.category && (
-                                                <Text 
-                                                    fontSize="sm" 
-                                                    color="gray.600" 
-                                                    mb={2}
-                                                    fontWeight="medium"
-                                                >
-                                                    {product.category}
-                                                </Text>
-                                            )}
-                                            
-                                            {product.description && (
-                                                <Text 
-                                                    fontSize="sm" 
-                                                    color="gray.700" 
-                                                    mb={3}
-                                                
-                                                >
-                                                    {product.description}
-                                                </Text>
-                                            )}
-                                            
-                                            <Text 
-                                                fontSize="xl" 
-                                                fontWeight="bold" 
-                                                color="blue.600"
-                                            >
-                                                ${parseFloat(product.price).toFixed(2)}
-                                            </Text>
-                                        </Box>
+                                        </Box>  
                                     </Box>
-                                )
-                            })
-                        ) : (
+                            )
+
+                        })) : ( 
                             <Center w="full" h="400px">
                                 <Box textAlign="center">
                                     <Text fontSize="lg" color="gray.600" mb={2}>

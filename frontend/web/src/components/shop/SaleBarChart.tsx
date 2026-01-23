@@ -37,7 +37,7 @@ interface OrderProp {
 const SaleBarChart = () => {
     const {orders, loading, error} = useOrder()
 
-    const unit = orders.find((o: OrderProp) => o.currency_unit)
+    // const unit = orders.find((o: OrderProp) => o.currency_unit)
 
     const orderChart: {[month: string]: {[product: string]: number}} = {}
     orders.forEach((ord: OrderProp) => {
@@ -50,7 +50,9 @@ const SaleBarChart = () => {
         if (!orderChart[month][product_name]){
             orderChart[month][product_name] = 0
         }
-        orderChart[month][product_name] += ord.quantity
+        if (ord.order_status === "Completed"){
+            orderChart[month][product_name] += ord.quantity
+        }
     })
     const allProducts = Array.from(
         new Set(orders.map(ord => ord.product_name))
@@ -76,12 +78,12 @@ const SaleBarChart = () => {
 
     if (loading) return <div>Loading...</div>
     if (error) return <div>Error loading orders</div>
-    if (data.length === 0) return <div>No data available</div>
+    if (data.length === 0) return <div>No product was sold so far</div>
 
     return (
-        <Box >
-            <Heading p={"20px"} textAlign={"center"} fontSize={{base:'14px', md:"18px"}}>Quantity of products sold per month: </Heading>
-            <Chart.Root p={"20px"} mt={"10px"} maxH={"400px"} chart={chart} shadow={"2xl"} rounded={"5px"}>
+        <Box shadow={"sm"} rounded={"5px"} px={"10px"}>
+            <Heading py={"20px"} textAlign={"center"} fontSize={{base:'14px', md:"18px"}}>Quantity of products sold per month: </Heading>
+            <Chart.Root chart={chart} h={"500px"}>
                 <BarChart data={chart.data} barGap={5}>
                     <CartesianGrid stroke={chart.color("border.muted")} vertical={false} />
                     <XAxis

@@ -8,7 +8,7 @@ import { BsFillTelephoneOutboundFill } from "react-icons/bs"
 import ProductListShop from '@/components/products/ProductListShop'
 import useProduct from '../products/ProductHook'
 import ProductCard from '../products/ProductCard'
-import { Avatar, Box, Container, Heading, HStack, Image, Stack, Text, Wrap, } from '@chakra-ui/react'
+import { Avatar, Box, Container, Heading, HStack, Image, Stack, Tabs, Text, Wrap, } from '@chakra-ui/react'
 
 interface ShopDataProps {
   id: string
@@ -41,8 +41,8 @@ interface Product {
   name: string;
   shop_id: string;
   description: string;
-  price: string;
-  new_price: string;
+  price: number;
+  new_price: number;
   discount_end_at: string;
   currency_unit: string;
   condition: string
@@ -53,6 +53,7 @@ interface Product {
   other: string;
   category: string;
   image: string;
+  images: ProductImage[]
 }
 
 const Templates: React.FC = () => {
@@ -93,63 +94,60 @@ const Templates: React.FC = () => {
                     w={{ base: "100%", md: "100%" }}                    
                   />
                 </Box>
-                <Heading my={"20px"}>Products</Heading>
-                <Wrap h={"fit-content"} justify={{base: "center", md: "space-between"}} gap={"10px"} mt={"20px"} mb={"20px"}
-                >
-                  {products && products.map((p: Product) => (
-                    <Box 
-                      key={p.id} 
-                      onClick={() => handleClickProduct(p.id)} 
-                      cursor="pointer" 
-                      _hover={{ shadow: "lg", transform: "scale(1.02)" }}
-                      transition="all 0.2s"
-                      rounded="md"
-                    >
-                      {/* Pass individual product to ProductListShop */}
-                      <ProductCard product={p} />
+                <Tabs.Root defaultValue={"product"}>
+                  <Tabs.List>
+                    <Tabs.Trigger value='product'>Products</Tabs.Trigger>
+                    <Tabs.Trigger value='service'>Services</Tabs.Trigger>
+                    <Tabs.Trigger value='policy'>Policies</Tabs.Trigger>
+                    <Tabs.Trigger value='contact'>Contact</Tabs.Trigger>
+                  </Tabs.List>
+                  <Tabs.Content value='product'>
+                    <Box>
+                      <Wrap h={"fit-content"} justify={{base: "center", md: "space-between"}} gap={"10px"} mt={"20px"} mb={"20px"}>
+                        {products && products.map((p: Product) => (
+                          <Box 
+                            key={p.id} 
+                            onClick={() => handleClickProduct(p.id)} 
+                            cursor="pointer" 
+                            _hover={{ shadow: "lg", transform: "scale(1.02)" }}
+                            transition="all 0.2s"
+                            rounded="md"
+                          >
+                            {/* Pass individual product to ProductListShop */}
+                            <ProductCard product={p} />
+                          </Box>
+                        ))}
+                      </Wrap>
+
                     </Box>
-                  ))}
-                </Wrap>
-                <Box h={"100px"} borderTop={"2px solid"}>
-                  <Stack               
-                      p="10px" 
-                      rounded="5px" 
-                      w={{ base: "100%", md: "fit-content" }}
-                      minW="250px"
-                    >
-                      <HStack>
-                        <GiShop />
-                        <Text 
-                          onClick={() => openGoogleMaps(shop.address)} 
-                          cursor="pointer"
-                          fontSize="sm"
-                          _hover={{ textDecoration: "underline", color: "blue.500" }}
-                        >
-                          {shop.address}
-                        </Text>
-                      </HStack>
-                      <HStack>
-                        <MdEmail />
-                        {/* Fixed: Using 'a' tag instead of Link for mailto */}
-                        <a 
-                          href={`mailto:${shop.email}`}
-                          style={{ fontSize: '14px', color: 'inherit' }}
-                        >
-                          {shop.email}
-                        </a>
-                      </HStack>
-                      <HStack>
-                        <BsFillTelephoneOutboundFill />
-                        {/* Fixed: Using 'a' tag instead of Link for tel */}
-                        <a 
-                          href={`tel:${shop.phone}`}
-                          style={{ fontSize: '14px', color: 'blue' }}
-                        >
-                          {shop.phone}
-                        </a>
-                      </HStack>
-                  </Stack>
-                </Box>
+                  </Tabs.Content>
+                  <Tabs.Content value='service'>
+                    <Heading>Shop's serivices</Heading>
+                    <Text>
+                      Lorem ipsum dolor sit amet consectetur adipisicing elit. 
+                      Consequatur amet temporibus adipisci natus quam ipsam eum dolor officia accusamus! 
+                      Fuga id libero repellendus voluptatum tempore sapiente iure quos adipisci ullam!
+                    </Text>
+                  </Tabs.Content>
+                  <Tabs.Content value='policy'>
+                    <Heading>Shop's Policies</Heading>
+                    <Text>
+                      Lorem ipsum dolor sit amet consectetur adipisicing elit. 
+                      Magnam nam quisquam consequuntur quas unde blanditiis doloribus id cumque tenetur possimus, 
+                      autem modi reiciendis veritatis exercitationem ducimus vero odio, corporis asperiores!
+                    </Text>
+                  </Tabs.Content>
+                  <Tabs.Content value='contact'>
+                    {shops && shops.map((s: ShopDataProps) => (
+                      <Box key={s.id}>
+                         
+                         <Text>Email: {s.email}</Text>
+                         <Text>Phone: {s.phone? s.phone : "no phone"}</Text>
+                         <Text>Address: {s.address ? s.address : "no address"}</Text>
+                      </Box>
+                    ))}
+                  </Tabs.Content>
+                </Tabs.Root>
               </Box>
             ) : shop.template === "Template-2" ? (
               <Box>

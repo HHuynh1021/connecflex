@@ -23,6 +23,7 @@ interface OrderProp {
     product_price: number
     order_total: number
     product_property: string
+    monthly_sales: number
 }
 
 const OrderList: React.FC = () => {
@@ -98,6 +99,7 @@ const OrderList: React.FC = () => {
                             .map((ord: OrderProp) => (
                                 <Box key={ord.id}>
                                     <Text>{ord.order_number}</Text>
+                                    {/* <Text>{ord.monthly_sales}</Text> */}
                                 </Box>
                             ))
                         }

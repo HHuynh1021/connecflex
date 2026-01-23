@@ -12,6 +12,8 @@ import { LuCircleCheck } from 'react-icons/lu'
 import SaleBarChart from '@/components/shop/SaleBarChart'
 import SaleBarList from '@/components/shop/SaleBarList'
 import OrderList from '@/components/orders/OrderList'
+import ShopInfo from './ShopInfo'
+import MonthlySaleBarList from '@/components/shop/MonthlySaleBarList'
 
 interface OrderProp {
     id: string
@@ -34,7 +36,23 @@ interface OrderProp {
     product_property: string
     product_price: number
 }
-
+interface ShopDataProps {
+    id: string
+    name: string
+    email: string
+    street: string
+    province: string
+    city: string
+    state: string
+    zipcode: string
+    country: string
+    phone: string
+    description: string
+    industry: string
+    logo: string
+    banner: string;
+    template: string;
+}
 const AdminHomePage = () => {
     const navigate = useNavigate()
     const {user, userInfo} = useSelector((state: any) => state.auth)
@@ -62,23 +80,26 @@ const AdminHomePage = () => {
         handleSize(mediaQuery as any)
         return () => mediaQuery.removeEventListener('change', handleSize)
     },[])
-    
+    // console.log("shops: ", shops)
+    const shop_name = shops.find((s: ShopDataProps) => s.name.length > 0)
     return (
         <Box>
-            {shops.length === 0 ? (
-                <CreateNewShop/>
+            {!shop_name ? (
+                <ShopInfo/>
             ) : (
-                <Box w={"100%"}>
-                    <Heading >Welcome back {userInfo.first_name} {userInfo.last_name}</Heading>
-                    <Stack justify={"space-evenly"}>
-                        <Box p={'10px'} border={"1px solid"} rounded={'5px'}> 
+                <VStack w={"100%"} my={'20px'}>
+                    <VStack w={"100%"} gap={"20px"}>
+                        <Box w={"100%"}>
                             <SaleBarChart/>
                         </Box>
-                        <Box p={"10px"} border={"1px solid"} rounded={'5px'}>
+                        <Box w={"100%"}>
                             <SaleBarList/>
                         </Box>
-                    </Stack>
-                </Box>
+                        <Box w={"100%"}>
+                            <MonthlySaleBarList/>
+                        </Box>
+                    </VStack>
+                </VStack>
             )}
         </Box>
     )

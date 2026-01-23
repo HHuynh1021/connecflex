@@ -6,7 +6,6 @@ import { HStack, Text, VStack, Container, Input, Button, Heading, Box } from '@c
 import { PasswordInput } from '../components/ui/password-input';
 
 interface FormData {
-  shop_name: string;
   role: string;
   first_name: string;
   last_name: string;
@@ -27,7 +26,6 @@ interface RootState {
 
 const Register: React.FC = () => {
   const [formData, setFormData] = useState<FormData>({
-    shop_name: "",
     role: "",
     first_name: "",
     last_name: "",
@@ -36,7 +34,7 @@ const Register: React.FC = () => {
     re_password: "",
   });
 
-  const { shop_name, role, first_name, last_name, email, password, re_password } = formData;
+  const { role, first_name, last_name, email, password, re_password } = formData;
   
   const dispatch = useDispatch<any>();
   const navigate = useNavigate();

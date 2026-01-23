@@ -6,35 +6,55 @@ import useAccessToken from '../../services/token'
 
 import api from '../../services/api'
 import { getUserInfo } from '../../services/authSlice'
-import { Box, Input, Textarea, Button, Stack, Image, Text, Heading, 
-    Container, Grid, IconButton, Badge, VStack, HStack,} from '@chakra-ui/react'
+import { VStack, HStack, Box, Input, Textarea, Button, Stack, Image, Text, Heading, Grid, IconButton, Badge} from '@chakra-ui/react'
 import { Field } from '@chakra-ui/react/field'
 import { toaster } from '../ui/toaster'
 import useShopAdmin from '../shop/ShopHookAdmin'
 import { X, Star } from 'lucide-react'
 
-interface ImagePreview {
+interface MediaPreview {
     file: File
     preview: string
     isPrimary: boolean
+    type: 'image' | 'video'
+}
+
+interface Category {
+    id: string
+    name: string
+    description: string
+}
+
+interface Property {
+    id: string
+    name: string
+    values: string[]  // Array of possible values for this property
+    description: string
+    created_at: string
+}
+
+interface SelectedProperty {
+    property_id: string
+    property_name: string
+    value: string  // Custom value entered by user
 }
 
 interface ProductFormData {
     name: string;
     shop_id: string;
     description: string;
-    price: string;
-    new_price: string;
+    quantity: number;
+    price: number;
+    new_price: number;
     discount_end_at: string;
     currency_unit: string;
-    condition: string
-    guaranty: string
-    color: string;
-    dimension: string;
-    weight: string;
-    other: string;
-    category: string;
-    image: string;
+    condition: string;
+    warranty: string;
+    category: string[];
+    properties: SelectedProperty[];  // Changed from string[] to SelectedProperty[]
+    delivery_term: string;
+    refund_policy: string;
+    refund: boolean;
 }
 
 const AddProducts: React.FC = () => {
@@ -44,10 +64,15 @@ const AddProducts: React.FC = () => {
     const { userInfo } = useSelector((state: any) => state.auth)
     const shopId = userInfo?.id.id
 
-
-    const { shops } = useShopAdmin(shopId)
+    const { shops } = useShopAdmin()
     const { accessToken } = useAccessToken(user)
     const [isLoading, setLoading] = useState<boolean>(false)
+    
+    // Categories and Properties state
+    const [categories, setCategories] = useState<Category[]>([])
+    const [properties, setProperties] = useState<Property[]>([])
+    const [loadingCategories, setLoadingCategories] = useState<boolean>(false)
+    const [loadingProperties, setLoadingProperties] = useState<boolean>(false)
 
     useEffect(() => {
         if (user && (!userInfo || Object.keys(userInfo).length === 0)) {
@@ -56,30 +81,83 @@ const AddProducts: React.FC = () => {
     }, [dispatch, user, userInfo])
     console.log("userInfo: ", userInfo)
 
+    // Fetch categories and properties on component mount
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                setLoadingCategories(true)
+                const response = await api.get(`${import.meta.env.VITE_API_BASE_URL}/shops/category-list/`)
+                setCategories(response.data || [])
+            } catch (error: any) {
+                console.error("Failed to fetch categories:", error)
+                toaster.create({
+                    title: 'Error',
+                    description: 'Failed to load categories',
+                    type: 'error',
+                    duration: 3000,
+                })
+            } finally {
+                setLoadingCategories(false)
+            }
+        }
+
+        const fetchProperties = async () => {
+            try {
+                setLoadingProperties(true)
+                const response = await api.get(`${import.meta.env.VITE_API_BASE_URL}/shops/properties-list/`)
+                setProperties(response.data || [])
+            } catch (error: any) {
+                console.error("Failed to fetch properties:", error)
+                toaster.create({
+                    title: 'Error',
+                    description: 'Failed to load properties',
+                    type: 'error',
+                    duration: 3000,
+                })
+            } finally {
+                setLoadingProperties(false)
+            }
+        }
+
+        fetchCategories()
+        fetchProperties()
+    }, [])
+
     // Form data
     const [formData, setFormData] = useState<ProductFormData>({
         name: "",
         shop_id: "",
         description: "",
-        price: "",
-        new_price: "",
+        quantity: 0,
+        price: 0,
+        new_price: 0,
         discount_end_at: "",
         currency_unit: "",
         condition: "",
-        guaranty: "",
-        color: "",
-        dimension: "",
-        weight: "",
-        other: "",
-        category: "",
-        image: "",
+        warranty: "",
+        category: [],
+        properties: [],
+        delivery_term: "",
+        refund_policy: "",
+        refund: false,
     })
 
     // Multiple images state
-    const [images, setImages] = useState<ImagePreview[]>([])
+    const [images, setImages] = useState<MediaPreview[]>([])
     const fileInputRef = useRef<HTMLInputElement>(null)
     const MAX_IMAGES = 5
     const MAX_FILE_SIZE = 5 * 1024 * 1024 
+
+    // Cleanup object URLs on unmount
+    useEffect(() => {
+        return () => {
+            images.forEach(img => {
+                if (img.type === 'video') {
+                    URL.revokeObjectURL(img.preview)
+                }
+            })
+        }
+    }, [])
 
     // Set shop_id when shops are loaded
     useEffect(() => {
@@ -95,15 +173,6 @@ const AddProducts: React.FC = () => {
         }
     }, [shops])
 
-
-    // const handleChange = (
-    //     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-    // ) => {
-    //     setFormData({
-    //         ...formData,
-    //         [e.target.name]: e.target.value,
-    //     })
-    // }
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target
         
@@ -113,6 +182,11 @@ const AddProducts: React.FC = () => {
             setFormData({
                 ...formData,
                 [name]: formattedValue
+            })
+        } else if (name === 'quantity' || name === 'price' || name === 'new_price') {
+            setFormData({
+                ...formData,
+                [name]: parseFloat(value) || 0
             })
         } else {
             setFormData({
@@ -131,105 +205,196 @@ const AddProducts: React.FC = () => {
         })
     }
 
+    const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData({
+            ...formData,
+            [e.target.name]: e.target.checked,
+        })
+    }
+
+    const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setFormData({
+            ...formData,
+            [e.target.name]: e.target.value,
+        })
+    }
+
+    // Handle category selection (supports multiple)
+    const handleCategoryChange = (categoryId: string) => {
+        setFormData(prev => {
+            const currentCategories = prev.category
+            const isSelected = currentCategories.includes(categoryId)
+            
+            if (isSelected) {
+                // Remove if already selected
+                return {
+                    ...prev,
+                    category: currentCategories.filter(id => id !== categoryId)
+                }
+            } else {
+                // Add if not selected
+                return {
+                    ...prev,
+                    category: [...currentCategories, categoryId]
+                }
+            }
+        })
+    }
+
+    // Handle property selection (supports multiple)
+    const handlePropertyChange = (propertyId: string) => {
+        const property = properties.find(p => p.id === propertyId)
+        if (!property) return
+
+        setFormData(prev => {
+            const existingProperty = prev.properties.find(p => p.property_id === propertyId)
+            
+            if (existingProperty) {
+                // Remove if already selected
+                return {
+                    ...prev,
+                    properties: prev.properties.filter(p => p.property_id !== propertyId)
+                }
+            } else {
+                // Add with empty value for user to fill in
+                return {
+                    ...prev,
+                    properties: [...prev.properties, {
+                        property_id: propertyId,
+                        property_name: property.name,
+                        value: ''  // Empty string for user input
+                    }]
+                }
+            }
+        })
+    }
+
+    // Handle property value selection/deselection
+    const handlePropertyValueChange = (propertyId: string, value: string) => {
+        setFormData(prev => ({
+            ...prev,
+            properties: prev.properties.map(p =>
+                p.property_id === propertyId
+                    ? { ...p, value }
+                    : p
+            )
+        }))
+    }
+
     // Handle multiple image selection
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || [])
-    
-    // Clear the input immediately
-    if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-    }
-    
-    if (files.length === 0) return
+        const files = Array.from(e.target.files || [])
+        
+        // Clear the input immediately
+        if (fileInputRef.current) {
+            fileInputRef.current.value = ''
+        }
+        
+        if (files.length === 0) return
 
-    // Check if already at max
-    if (images.length >= MAX_IMAGES) {
-        toaster.create({
-            title: 'Maximum Images Reached',
-            description: 'You already have 5 images. Remove some before adding more.',
-            type: 'warning',
-            duration: 3000,
-        })
-        return
-    }
+        // Check if already at max
+        if (images.length >= MAX_IMAGES) {
+            toaster.create({
+                title: 'Maximum Images Reached',
+                description: 'You already have 5 images. Remove some before adding more.',
+                type: 'warning',
+                duration: 3000,
+            })
+            return
+        }
 
-    // Check if adding these files would exceed max
-    const remainingSlots = MAX_IMAGES - images.length
-    const filesToProcess = files.slice(0, remainingSlots)
-    
-    if (files.length > remainingSlots) {
-        toaster.create({
-            title: 'Too Many Images Selected',
-            description: `Only adding first ${remainingSlots} image${remainingSlots > 1 ? 's' : ''}. Maximum is ${MAX_IMAGES} per product.`,
-            type: 'warning',
-            duration: 3000,
-        })
-    }
+        // Check if adding these files would exceed 
+        const remainingSlots = MAX_IMAGES - images.length
+        const filesToProcess = files.slice(0, remainingSlots)
+        
+        if (files.length > remainingSlots) {
+            toaster.create({
+                title: 'Too Many Images Selected',
+                description: `Only adding first ${remainingSlots} image${remainingSlots > 1 ? 's' : ''}. Maximum is ${MAX_IMAGES} per product.`,
+                type: 'warning',
+                duration: 3000,
+            })
+        }
 
-    // Process files
-    const processFiles = async () => {
-        const newImages: ImagePreview[] = []
+        // Process files
+        const processFiles = async () => {
+            const newImages: MediaPreview[] = []
 
-        for (const file of filesToProcess) {
-            // Validate file type
-            if (!file.type.startsWith('image/')) {
-                toaster.create({
-                    title: 'Invalid File',
-                    description: `${file.name} is not an image file`,
-                    type: 'error',
-                    duration: 3000,
-                })
-                continue
+            for (const file of filesToProcess) {
+                // Validate file type
+                const isImage = file.type.startsWith('image/')
+                const isVideo = file.type.startsWith('video/')
+                if (!isImage && !isVideo) {
+                    toaster.create({
+                        title: 'Invalid File',
+                        description: `${file.name} is not an image or video file`,
+                        type: 'error',
+                        duration: 3000,
+                    })
+                    continue
+                }
+
+                // Validate file size
+                const maxSize = isVideo ? 50 * 1024 * 1024 : MAX_FILE_SIZE
+                if (file.size > maxSize) {
+                    toaster.create({
+                        title: 'File Too Large',
+                        description: `${file.name} must be smaller than ${maxSize / (1024 * 1024)}MB`,
+                        type: 'error',
+                        duration: 3000,
+                    })
+                    continue
+                }
+
+                // Create preview
+                try {
+                    let preview: string
+                    if (isImage) {
+                        // Image preview using FileReader
+                        preview = await new Promise<string>((resolve, reject) => {
+                            const reader = new FileReader()
+                            reader.onloadend = () => resolve(reader.result as string)
+                            reader.onerror = reject
+                            reader.readAsDataURL(file)
+                        })
+                    } else {
+                        // Video preview - create object URL
+                        preview = URL.createObjectURL(file)
+                    }
+        
+                    newImages.push({
+                        file,
+                        preview,
+                        isPrimary: images.length === 0 && newImages.length === 0,
+                        type: isImage ? 'image' : 'video'
+                    })
+                } catch (error) {
+                    console.error('Error reading file:', file.name, error)
+                    toaster.create({
+                        title: 'Error',
+                        description: `Failed to read ${file.name}`,
+                        type: 'error',
+                        duration: 3000,
+                    })
+                }
             }
-
-            // Validate file size
-            if (file.size > MAX_FILE_SIZE) {
-                toaster.create({
-                    title: 'File Too Large',
-                    description: `${file.name} must be smaller than 5MB`,
-                    type: 'error',
-                    duration: 3000,
-                })
-                continue
-            }
-
-            // Create preview
-            try {
-                const preview = await new Promise<string>((resolve, reject) => {
-                    const reader = new FileReader()
-                    reader.onloadend = () => resolve(reader.result as string)
-                    reader.onerror = reject
-                    reader.readAsDataURL(file)
-                })
-
-                newImages.push({
-                    file,
-                    preview,
-                    isPrimary: images.length === 0 && newImages.length === 0
-                })
-            } catch (error) {
-                console.error('Error reading file:', file.name, error)
-                toaster.create({
-                    title: 'Error',
-                    description: `Failed to read ${file.name}`,
-                    type: 'error',
-                    duration: 3000,
-                })
+        
+            if (newImages.length > 0) {
+                setImages(prev => [...prev, ...newImages])
             }
         }
 
-        if (newImages.length > 0) {
-            setImages(prev => [...prev, ...newImages])
-        }
+        processFiles()
     }
-
-    processFiles()
-}
 
     // Remove specific image
     const handleRemoveImage = (index: number) => {
         setImages(prev => {
             const newImages = prev.filter((_, i) => i !== index)
+            // Clean up object URL if it's a video
+            if (prev[index].type === 'video') {
+                URL.revokeObjectURL(prev[index].preview)
+            }
             // If removed image was primary and there are other images, make first one primary
             if (prev[index].isPrimary && newImages.length > 0) {
                 newImages[0].isPrimary = true
@@ -295,24 +460,39 @@ const AddProducts: React.FC = () => {
         try {
             const productUrl = `${import.meta.env.VITE_API_BASE_URL}/shops/product-list-create/`
             
-            const productData = {
+            // Prepare category - ensure it's an array of strings (IDs)
+            const categoryArray: string[] = Array.isArray(formData.category) 
+                ? formData.category.filter((c): c is string => typeof c === 'string' && c.length > 0)
+                : []
+
+            // Prepare properties_input with custom values
+            const propertiesInput = formData.properties
+                .filter(p => p.value.trim().length > 0)  // Only include properties with values
+                .map(p => ({
+                    property_id: p.property_id,
+                    value: p.value
+                }))
+
+            const productData: any = {
                 name: formData.name,
                 shop_id: formData.shop_id,
-                description: formData.description,
-                price: parseFloat(formData.price),
-                new_price: formData.new_price || formData.price,
-                ...(formData.discount_end_at && formData.new_price && {
-                    discount_end_at: formData.discount_end_at
-                }),
-                currency_unit: formData.currency_unit,
-                condition: formData.condition,
-                guaranty: formData.guaranty,
-                color: formData.color,
-                dimension: formData.dimension,
-                weight: formData.weight,
-                other: formData.other,
-                category: formData.category,
-                // image: formData.image
+                description: formData.description || "",
+                quantity: formData.quantity || 0,
+                price: parseFloat(formData.price.toString()),
+                new_price: formData.new_price ? parseFloat(formData.new_price.toString()) : null,
+                currency_unit: formData.currency_unit || "EUR",
+                condition: formData.condition || "",
+                warranty: formData.warranty || "",
+                category: categoryArray,
+                properties_input: propertiesInput,
+                delivery_term: formData.delivery_term || "",
+                refund_policy: formData.refund_policy || "",
+                refund: formData.refund || false,
+            }
+
+            // Add discount_end_at only if both new_price and discount_end_at are provided
+            if (formData.discount_end_at && formData.new_price) {
+                productData.discount_end_at = formData.discount_end_at
             }
 
             const productResponse = await api.post(productUrl, productData, {
@@ -323,7 +503,6 @@ const AddProducts: React.FC = () => {
             })
 
             const productId = productResponse.data.id
-            // console.log("Product created successfully with ID:", productId)
 
             const imageUrl = `${import.meta.env.VITE_API_BASE_URL}/shops/product-image-create/`
 
@@ -332,7 +511,7 @@ const AddProducts: React.FC = () => {
                 
                 // Link image to the product using product_id
                 imageFormData.append('product_id', productId)
-                imageFormData.append('image', img.file)
+                imageFormData.append('media', img.file)
                 imageFormData.append('is_primary', String(img.isPrimary))
                 imageFormData.append('order', String(index))
 
@@ -348,7 +527,6 @@ const AddProducts: React.FC = () => {
 
             // Wait for all images to upload
             await Promise.all(imageUploadPromises)
-            // console.log(`All ${images.length} images uploaded successfully`)
 
             toaster.create({
                 title: 'Success',
@@ -361,20 +539,20 @@ const AddProducts: React.FC = () => {
             const currentShopId = formData.shop_id
             setFormData({
                 name: "",
-                shop_id: "",
+                shop_id: currentShopId,
                 description: "",
-                price: "",
-                new_price: "",
+                quantity: 0,
+                price: 0,
+                new_price: 0,
                 discount_end_at: "",
                 currency_unit: "",
-                condition:"",
-                guaranty:"",
-                color: "",
-                dimension: "",
-                weight: "",
-                other: "",
-                category: "",
-                image: "",
+                condition: "",
+                warranty: "",
+                category: [],
+                properties: [],
+                delivery_term: "",
+                refund_policy: "",
+                refund: false,
             })
             setImages([])
 
@@ -390,6 +568,7 @@ const AddProducts: React.FC = () => {
             setLoading(false)
         }
     }
+
     const getDatetimeLocalValue = (isoString: string) => {
         if (!isoString) return ''
         try {
@@ -404,9 +583,10 @@ const AddProducts: React.FC = () => {
             return ''
         }
     }
+
     return (
         <Box maxW="100%" py={8}>
-            <Box bg="white" p={8} borderRadius="lg" shadow="md">
+            <Box p={8} rounded={"5px"} shadow="md">
                 <Heading size="lg" mb={6}>Add New Product</Heading>
 
                 <form onSubmit={handleAddProduct}>
@@ -424,6 +604,24 @@ const AddProducts: React.FC = () => {
                                 size="lg"
                             />
                         </Field.Root>
+
+                        {/* Quantity */}
+                        <Field.Root required>
+                            <Field.Label>
+                                Quantity <Field.RequiredIndicator />
+                            </Field.Label>
+                            <Input
+                                name="quantity"
+                                type="number"
+                                min="0"
+                                value={formData.quantity}
+                                onChange={handleChange}
+                                placeholder="0"
+                                size="lg"
+                            />
+                        </Field.Root>
+
+                        {/* Price */}
                         <Field.Root required>
                             <Field.Label>
                                 Price <Field.RequiredIndicator />
@@ -439,11 +637,11 @@ const AddProducts: React.FC = () => {
                             />
                         </Field.Root>
                         
+                        {/* Discount Price */}
                         <Field.Root>
                             <Field.Label>Discount Price</Field.Label>
                             <Input
                                 name="new_price"
-                                defaultValue={0}
                                 type="number"
                                 step="0.01"
                                 value={formData.new_price}
@@ -452,20 +650,22 @@ const AddProducts: React.FC = () => {
                                 size="lg"
                             />
                         </Field.Root>
+
+                        {/* Discount End At */}
                         <Field.Root>
                             <Field.Label>Discount end at</Field.Label>
                             <Input
                                 name="discount_end_at"
                                 type="datetime-local"
-                                step="0.01"
                                 value={getDatetimeLocalValue(formData.discount_end_at)}
-                                defaultValue={''}
                                 onChange={handleChange}
                                 placeholder="Select date and time"
                                 disabled={!formData.new_price}
                                 size="lg"
                             />
                         </Field.Root>
+
+                        {/* Currency Unit */}
                         <Field.Root required>
                             <Field.Label htmlFor="currency_unit">
                                 Currency Unit
@@ -477,7 +677,6 @@ const AddProducts: React.FC = () => {
                                 value={formData.currency_unit}
                                 onChange={handleSelectChange}
                                 style={{border:"1px solid", borderRadius:"5px", padding:"10px"}}
-                                
                             >
                                 <option value={""}>Choose one</option>
                                 <option value={"EUR"}>EUR</option>
@@ -485,6 +684,8 @@ const AddProducts: React.FC = () => {
                                 <option value={"USD"}>USD</option>
                             </select>
                         </Field.Root>
+
+                        {/* Condition */}
                         <Field.Root required>
                             <Field.Label htmlFor="condition">
                                 Product Condition
@@ -506,98 +707,199 @@ const AddProducts: React.FC = () => {
                                 <option value="BROKEN">BROKEN</option>
                             </select>
                         </Field.Root>
+
+                        {/* Warranty */}
                         <Field.Root>
-                            <Field.Label>Guaranty</Field.Label>
+                            <Field.Label>Warranty</Field.Label>
                             <Input
-                                name="guaranty"
-                                value={formData.guaranty || "2 years"}
+                                name="warranty"
+                                value={formData.warranty || "2 years"}
                                 onChange={handleChange}
-                                placeholder="Enter guaranty"
+                                placeholder="Enter warranty"
                                 size="lg"
-                                defaultValue={"2 years"}
                             />
                         </Field.Root>
+
+                        {/* Category - Multi-select */}
                         <Field.Root>
                             <Field.Label htmlFor="category">Category</Field.Label>
-                            <select
-                                required
-                                id='category'
-                                name='category'
-                                value={formData.category}
-                                onChange={handleSelectChange}
-                                style={{border:"1px solid", borderRadius:"5px", padding:"10px"}}
-                            >
-                                <option value="">Choose one</option>
-                                <option value="retail">Retail</option>
-                                <option value="electronics">Electronics</option>
-                                <option value="computer">Computer and Accessories</option>
-                                <option value="interior">Interior</option>
-                                <option value="exterior">Exterior</option>
-                                <option value="transport">Transport</option>
-                                <option value="medical">Medical Equipment</option>
-                                <option value="pharmacy">Pharmacy</option>
-                                <option value="beauty">Beauty</option>
-                                <option value="fashion">Fashion</option>
-                                <option value="household">Household</option>
-                                <option value="garden">Garden</option>
-                                <option value="tools">Tools</option>
-                                <option value="sports">Sports</option>
-                                <option value="other">Other</option>
-                            </select>
+                            {loadingCategories ? (
+                                <Text>Loading categories...</Text>
+                            ) : (
+                                <Box>
+                                    <select
+                                        id='category'
+                                        name='category'
+                                        value=""
+                                        onChange={(e) => {
+                                            if (e.target.value) {
+                                                handleCategoryChange(e.target.value)
+                                                e.target.value = "" // Reset select
+                                            }
+                                        }}
+                                        style={{border:"1px solid", borderRadius:"5px", padding:"10px", width:"100%"}}
+                                    >
+                                        <option value="">Add a category...</option>
+                                        {categories.map((cat) => (
+                                            <option key={cat.id} value={cat.id}>
+                                                {cat.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {formData.category.length > 0 && (
+                                        <Box mt={2} display="flex" flexWrap="wrap" gap={2}>
+                                            {formData.category.map((catId) => {
+                                                const cat = categories.find(c => c.id === catId)
+                                                return cat ? (
+                                                    <Badge
+                                                        key={catId}
+                                                        colorPalette="blue"
+                                                        px={3}
+                                                        py={1}
+                                                        borderRadius="md"
+                                                        display="flex"
+                                                        alignItems="center"
+                                                        gap={2}
+                                                    >
+                                                        {cat.name}
+                                                        <IconButton
+                                                            size="xs"
+                                                            variant="ghost"
+                                                            onClick={() => handleCategoryChange(catId)}
+                                                            aria-label="Remove category"
+                                                        >
+                                                            <X size={12} />
+                                                        </IconButton>
+                                                    </Badge>
+                                                ) : null
+                                            })}
+                                        </Box>
+                                    )}
+                                </Box>
+                            )}
+                        </Field.Root>
 
-                        </Field.Root>
+                        {/* Properties - Multi-select with Values */}
                         <Field.Root>
-                            <Field.Label>Color</Field.Label>
-                            <select
-                                required
-                                id='color'
-                                name='color'
-                                value={formData.color}
-                                onChange={handleSelectChange}
-                                style={{border:"1px solid", borderRadius:"5px", padding:"10px"}}
-                            >
-                                <option value="">Choose one</option>
-                                <option value="black">Black</option>
-                                <option value="white">White</option>
-                                <option value="gray">Gray</option>
-                                <option value="red">Red</option>
-                                <option value="blue">Blue</option>
-                                <option value="green">Green</option>
-                                <option value="yellow">Yellow</option>
-                                <option value="purple">Purple</option>
-                                <option value="orange">Orange</option>
-                                <option value="brown">Brown</option>
-                            </select>
+                            <Field.Label htmlFor="properties">Product Properties</Field.Label>
+                            {loadingProperties ? (
+                                <Text>Loading properties...</Text>
+                            ) : (
+                                <Box>
+                                    <select
+                                        id='properties'
+                                        name='properties'
+                                        value=""
+                                        onChange={(e) => {
+                                            if (e.target.value) {
+                                                handlePropertyChange(e.target.value)
+                                                e.target.value = "" // Reset select
+                                            }
+                                        }}
+                                        style={{border:"1px solid", borderRadius:"5px", padding:"10px", width:"100%"}}
+                                    >
+                                        <option value="">Add a property...</option>
+                                        {properties.map((prop) => (
+                                            <option key={prop.id} value={prop.id}>
+                                                {prop.name} {prop.values && prop.values.length > 0 ? `(${prop.values.length} options)` : ''}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    
+                                    {/* Selected Properties with Value Checkboxes */}
+                                    {formData.properties.length > 0 && (
+                                        <VStack mt={4} gap={4} align="stretch">
+                                            {formData.properties.map((selectedProp) => {
+                                                const property = properties.find(p => p.id === selectedProp.property_id)
+                                                return (
+                                                    <Box
+                                                        key={selectedProp.property_id}
+                                                        borderWidth="1px"
+                                                        borderRadius="md"
+                                                        p={4}
+                                                        bg="gray.50"
+                                                    >
+                                                        <HStack justify="space-between" mb={3}>
+                                                            <Heading size="sm">{selectedProp.property_name}</Heading>
+                                                            <IconButton
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                colorPalette="red"
+                                                                onClick={() => handlePropertyChange(selectedProp.property_id)}
+                                                                aria-label="Remove property"
+                                                            >
+                                                                <X size={16} />
+                                                            </IconButton>
+                                                        </HStack>
+                                                        
+                                                        <Field.Root>
+                                                            <Field.Label fontSize="sm">Enter custom value</Field.Label>
+                                                            <Input
+                                                                value={selectedProp.value}
+                                                                onChange={(e) => handlePropertyValueChange(selectedProp.property_id, e.target.value)}
+                                                                placeholder={`Enter ${selectedProp.property_name.toLowerCase()} value (e.g., ${property?.values?.[0] || 'custom value'})`}
+                                                                size="sm"
+                                                            />
+                                                            {property && property.values && property.values.length > 0 && (
+                                                                <Field.HelperText fontSize="xs">
+                                                                    Suggestions: {property.values.join(', ')}
+                                                                </Field.HelperText>
+                                                            )}
+                                                        </Field.Root>
+                                                    </Box>
+                                                )
+                                            })}
+                                        </VStack>
+                                    )}
+                                </Box>
+                            )}
+                            <Field.HelperText>
+                                Add properties and enter custom values for each (e.g., Dimension: 10x20x30cm)
+                            </Field.HelperText>
                         </Field.Root>
+
+                        {/* Delivery Term */}
                         <Field.Root>
-                            <Field.Label>Dimension</Field.Label>
-                            <Input
-                                name="dimension"
-                                value={formData.dimension}
-                                onChange={handleChange}
-                                placeholder="Enter dimension"
+                            <Field.Label>Delivery Terms</Field.Label>
+                            <Textarea
+                                name="delivery_term"
+                                value={formData.delivery_term}
+                                onChange={handleTextareaChange}
+                                placeholder="Enter delivery terms (e.g., Standard delivery 3-5 business days)"
+                                rows={3}
                                 size="lg"
                             />
                         </Field.Root>
+
+                        {/* Refund Policy */}
                         <Field.Root>
-                            <Field.Label>Weight</Field.Label>
-                            <Input
-                                name="weight"
-                                value={formData.weight}
-                                onChange={handleChange}
-                                placeholder="Enter weight"
+                            <Field.Label>Refund Policy</Field.Label>
+                            <Textarea
+                                name="refund_policy"
+                                value={formData.refund_policy}
+                                onChange={handleTextareaChange}
+                                placeholder="Enter refund policy details"
+                                rows={3}
                                 size="lg"
                             />
                         </Field.Root>
+
+                        {/* Refund Available */}
                         <Field.Root>
-                            <Field.Label>Others</Field.Label>
-                            <Input
-                                name="other"
-                                value={formData.other}
-                                onChange={handleChange}
-                                placeholder="Enter other"
-                                size="lg"
-                            />
+                            <Field.Label htmlFor="refund">Refund Available</Field.Label>
+                            <Box display="flex" alignItems="center" gap={2}>
+                                <input
+                                    type="checkbox"
+                                    id="refund"
+                                    name="refund"
+                                    checked={formData.refund}
+                                    onChange={handleCheckboxChange}
+                                    style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                                />
+                                <Text fontSize="sm" color="gray.600">
+                                    Check if refunds are available for this product
+                                </Text>
+                            </Box>
                         </Field.Root>
 
                         {/* Description */}
@@ -606,18 +908,19 @@ const AddProducts: React.FC = () => {
                             <Textarea
                                 name="description"
                                 value={formData.description}
-                                onChange={handleChange}
+                                onChange={handleTextareaChange}
                                 placeholder="Enter product description"
                                 rows={5}
                                 size="lg"
                             />
                         </Field.Root>
 
+                        {/* Product Images */}
                         <Field.Root required={images.length === 0}>
                             <Field.Label>Product Images {images.length > 0 && `(${images.length}/${MAX_IMAGES})`}</Field.Label>
                             <Input
                                 type="file"
-                                accept="image/*"
+                                accept="image/*,video/*"
                                 multiple
                                 ref={fileInputRef}
                                 onChange={handleImageSelect}
@@ -639,7 +942,7 @@ const AddProducts: React.FC = () => {
                             />
                             <Field.HelperText color={images.length >= MAX_IMAGES ? "red.500" : "gray.600"}>
                                 {images.length < MAX_IMAGES 
-                                    ? `Add up to ${MAX_IMAGES - images.length} more. Max 5MB each. Formats: JPG, PNG, GIF, WebP.`
+                                    ? `Add up to ${MAX_IMAGES - images.length} more. Max 5MB for images, 50MB for videos. Formats: JPG, PNG, GIF, WebP, MP4, MOV.`
                                     : 'Maximum reached. Remove an image to add more.'}
                             </Field.HelperText>
                         </Field.Root>
@@ -682,14 +985,22 @@ const AddProducts: React.FC = () => {
                                                 </Badge>
                                             )}
 
-                                            {/* Image */}
-                                            <Image
-                                                src={img.preview}
-                                                alt={`Product ${index + 1}`}
-                                                w="full"
-                                                h="150px"
-                                                objectFit="cover"
-                                            />
+                                            {/* Media Preview - Conditional rendering */}
+                                            {img.type === 'video' ? (
+                                                <video
+                                                    src={img.preview}
+                                                    controls
+                                                    style={{ width: '100%', height: '150px', objectFit: 'cover' }}
+                                                />
+                                            ) : (
+                                                <Image
+                                                    src={img.preview}
+                                                    alt={`Product ${index + 1}`}
+                                                    w="full"
+                                                    h="150px"
+                                                    objectFit="cover"
+                                                />
+                                            )}
 
                                             {/* Action Buttons */}
                                             <Box

@@ -27,6 +27,7 @@ interface OrderProp {
     customer_address: string
     product_property: string
     product_price: number
+    monthly_sales: number
 }
 
 const useOrder = () => {
