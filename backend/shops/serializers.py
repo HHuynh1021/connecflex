@@ -4,7 +4,7 @@ from itertools import count
 from rest_framework import serializers
 
 from customers.serializers import GuestUserSerializer
-from shops.models import ProductCategory, ProductProperty, ProductPropertyValue, Shop, Product, ProductImage, OrderProduct
+from shops.models import ProductCategory, ProductProperty, Shop, Product, ProductImage, OrderProduct
 
 class ProductCategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -70,16 +70,6 @@ class ProductImageSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class ProductPropertyValueSerializer(serializers.ModelSerializer):
-    property_id = serializers.CharField(source='property.id', read_only=True)
-    property_name = serializers.CharField(source='property.name', read_only=True)
-    
-    class Meta:
-        model = ProductPropertyValue
-        fields = ['id', 'property_id', 'property_name', 'value']
-        read_only_fields = ['id']
-
-
 class ProductSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, read_only=True)
     shop_name = serializers.SerializerMethodField()
@@ -89,21 +79,16 @@ class ProductSerializer(serializers.ModelSerializer):
     current_price = serializers.SerializerMethodField()
     primary_image = serializers.SerializerMethodField()
     new_price = serializers.SerializerMethodField()
-    # Properties with custom values
-    property_values = ProductPropertyValueSerializer(many=True, read_only=True)
-    properties_input = serializers.ListField(
-        child=serializers.DictField(),
-        write_only=True,
-        required=False,
-        help_text="List of {property_id: 'id', value: 'custom value'}"
-    )
+    properties = serializers.ListField(child=serializers.DictField(), required=False)
     category = serializers.PrimaryKeyRelatedField(many=True, queryset=ProductCategory.objects.all())
+    category_names = serializers.SerializerMethodField()
     
     class Meta:
         model = Product
         fields = "__all__"
         read_only_fields = ('id',)
-    
+    def get_category_names(self, obj):
+        return obj.category.values_list('name', flat=True)
     def get_new_price(self, obj):
         """Return 0 if discount is expired, otherwise return actual new_price"""
         if obj.is_discount_expired():
@@ -147,42 +132,23 @@ class ProductSerializer(serializers.ModelSerializer):
         return float(obj.current_price)
     
     def create(self, validated_data):
-        """Handle creating product with categories and properties"""
+        """Handle creating product with categories"""
         categories = validated_data.pop('category', [])
-        properties_input = validated_data.pop('properties_input', [])
         
-        # Create the product
+        # Create the product (properties are already in validated_data as 'property')
         product = Product.objects.create(**validated_data)
         
         # Add categories
         if categories:
             product.category.set(categories)
         
-        # Add property values
-        if properties_input:
-            from shops.models import ProductPropertyValue, ProductProperty
-            for prop_data in properties_input:
-                property_id = prop_data.get('property_id')
-                value = prop_data.get('value')
-                if property_id and value:
-                    try:
-                        prop = ProductProperty.objects.get(id=property_id)
-                        ProductPropertyValue.objects.create(
-                            product=product,
-                            property=prop,
-                            value=value
-                        )
-                    except ProductProperty.DoesNotExist:
-                        pass
-        
         return product
     
     def update(self, instance, validated_data):
-        """Handle updating product with categories and properties"""
+        """Handle updating product with categories"""
         categories = validated_data.pop('category', None)
-        properties_input = validated_data.pop('properties_input', None)
         
-        # Update regular fields
+        # Update regular fields (including property array)
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
@@ -190,26 +156,6 @@ class ProductSerializer(serializers.ModelSerializer):
         # Update many-to-many relationships if provided
         if categories is not None:
             instance.category.set(categories)
-        
-        # Update property values
-        if properties_input is not None:
-            from shops.models import ProductPropertyValue, ProductProperty
-            # Clear existing property values
-            instance.property_values.all().delete()
-            # Add new property values
-            for prop_data in properties_input:
-                property_id = prop_data.get('property_id')
-                value = prop_data.get('value')
-                if property_id and value:
-                    try:
-                        prop = ProductProperty.objects.get(id=property_id)
-                        ProductPropertyValue.objects.create(
-                            product=instance,
-                            property=prop,
-                            value=value
-                        )
-                    except ProductProperty.DoesNotExist:
-                        pass
         
         return instance
 

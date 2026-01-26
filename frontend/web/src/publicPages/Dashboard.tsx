@@ -96,14 +96,9 @@ const Dashboard:React.FC = () => {
                             </HStack>
                         </HStack>
                         <Stack flexDirection={"row"} gap={"20px"}>
-                            <Box w={"70%"} shadow={"sm"} rounded={"5px"}>
+                            <Box w={"100%"} shadow={"sm"} rounded={"5px"}>
                                 <Outlet/>
                             </Box>
-                            <VStack gap={"10px"} w={"30%"}>
-                                <Box w={"100%"} h={"300px"} p={"10px"} shadow={"sm"} rounded={"5px"}>advertising space</Box>
-                                <Box w={"100%"} h={"300px"} p={"10px"} shadow={"sm"} rounded={"5px"}>advertising space</Box>
-                                <Box w={"100%"} h={"300px"} p={"10px"} shadow={"sm"} rounded={"5px"}>advertising space</Box>
-                            </VStack>
                         </Stack>
                     </Box>
                 ):(

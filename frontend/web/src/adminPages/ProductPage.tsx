@@ -20,10 +20,14 @@ interface Category {
 }
 
 interface Property {
-    id: string
     name: string
     values: string[]
     description: string
+}
+
+interface SelectedProperty {
+    property_name: string, 
+    value: string
 }
 
 interface ProductProp {
@@ -32,19 +36,15 @@ interface ProductProp {
     quantity: number
     shop_id: string;
     description: string;
-    price: string;
-    new_price: string;
+    price: number;
+    new_price: number;
     discount_end_at: string;
     currency_unit: string;
     condition: string
-    guaranty: string
-    color: string;
-    dimension: string;
-    weight: string;
-    other: string;
+    warranty: string
     category: string[];  // Array of category IDs
-    properties: Property[];  // Array of property objects
-    image: string;
+    properties: SelectedProperty[];  // Array of property objects with custom values
+    images?: string[];
     primary_image: string
     shop_owner_id: string
 }
@@ -57,7 +57,6 @@ const ProductPage = () => {
     const { products, isLoading, refetch } = useProductList() // Add refetch if available
     const {shops} = useShopAdmin()
     const [categories, setCategories] = useState<Category[]>([])
-    const [properties, setProperties] = useState<Property[]>([])
     
     const fetchCategories = async () => {
         try {
@@ -65,15 +64,6 @@ const ProductPage = () => {
             setCategories(response.data || [])
         } catch (error: any) {
             console.error("Failed to fetch categories:", error)
-        }
-    }
-    
-    const fetchProperties = async () => {
-        try {
-            const response = await api.get(`${import.meta.env.VITE_API_BASE_URL}/shops/properties-list/`)
-            setProperties(response.data || [])
-        } catch (error: any) {
-            console.error("Failed to fetch properties:", error)
         }
     }
     
@@ -87,14 +77,12 @@ const ProductPage = () => {
             .join(', ')
     }
     
-    const getPropertyNames = (productProperties: Property[]) => {
+    const getPropertyNames = (productProperties: SelectedProperty[]) => {
         if (!productProperties || productProperties.length === 0) return 'No properties'
         return productProperties
             .map(prop => {
-                const values = prop.values && prop.values.length > 0 
-                    ? prop.values.join(', ') 
-                    : 'no values'
-                return `${prop.name}: ${values}`
+                const value = prop.value || 'no value'
+                return `${prop.property_name}: ${value}`
             })
             .join(' | ')
     }
@@ -108,15 +96,14 @@ const ProductPage = () => {
     useEffect(() => {
         const fetchData = async () => {
             await fetchCategories()
-            await fetchProperties()
         }
         fetchData()
     }, [])
     
     const shopId = shops.find((shop: any) => shop.shop_account === userInfo?.id)?.id
     
-    const handleUpdate = (productId: string) => {
-        navigate(`/management/products/update/${productId}`) // Fixed syntax
+    const handleUpdate = (shopId: string, productId: string) => {
+        navigate(`/management/products/update/${shopId}/${productId}`) // Fixed syntax
     }
     
     const handleDeleteProduct = async (productId: string) => {
@@ -178,12 +165,11 @@ const ProductPage = () => {
                 discount_end_at: product.discount_end_at,
                 currency_unit: product.currency_unit,
                 condition: product.condition,
-                guaranty: product.guaranty,
-                color: product.color,
-                dimension: product.dimension,
-                weight: product.weight,
-                other: product.other,
-                category: product.category,
+                warranty: product.warranty,
+                category: product.category,                         
+                properties: product.properties,
+                images: product.images,
+                // primary_image: product.primary_image,
                 // Note: You may need to handle image duplication separately
                 // depending on your backend API
             }
@@ -243,8 +229,8 @@ const ProductPage = () => {
                 </Table.Header>
                 <Table.Body>   
                 {products && products
-                .filter((product: ProductProp) => product.shop_id === shopId)
-                .map((p: ProductProp) => (
+                .filter((product: any) => product.shop_id === shopId)
+                .map((p: any) => (
                     <Table.Row key={p.id}>
                         <Table.Cell fontSize={{base:'12px', md:"14px"}}>{p.name}</Table.Cell>
                         <Table.Cell fontSize={{base:'12px', md:"14px"}}>{p.quantity}</Table.Cell>
@@ -277,7 +263,7 @@ const ProductPage = () => {
                                     <Menu.Positioner>
                                     <Menu.Content>
                                         <Menu.Item value="new-win" onClick={() => handleDuplicate(p)}>Duplicate</Menu.Item>
-                                        <Menu.Item value="new-txt" onClick={() => handleUpdate(p.id)}>Update</Menu.Item>
+                                        <Menu.Item value="new-txt" onClick={() => handleUpdate(p.shop_id, p.id)}>Update</Menu.Item>
                                         <Menu.Item value="new-file" onClick={() => handleDeleteProduct(p.id)}>Delete</Menu.Item>
                                     </Menu.Content>
                                     </Menu.Positioner>

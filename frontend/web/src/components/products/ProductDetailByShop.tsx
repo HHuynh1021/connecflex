@@ -29,7 +29,15 @@ interface ProductImage {
     is_primary: boolean
     order: number
 }
-
+interface Category {
+    id: string
+    name: string
+    description: string
+}
+interface PropertyItem {
+    property_name: string
+    value: string
+}
 interface Product {
     id: string
     name: string;
@@ -42,8 +50,11 @@ interface Product {
     currency_unit: string;
     condition: string;
     warranty: string;
-    category: string[]; // Array of category IDs
-    properties: string[]; // Array of property IDs
+    category_names: string[];
+    properties: PropertyItem[];
+    delivery_term: string;
+    refund: boolean;
+    refund_policy: string;
     shop_owner_id: string
     primary_image: string
     images: ProductImage[]
@@ -52,12 +63,19 @@ interface OtherProduct {
     id: string
     name: string
     shop_id: string
-    images: ProductImage[]
     description: string
     price: number
     new_price: number;
     currency_unit: string;
-    category: string
+    warranty: string;
+    category_names: string[];
+    properties: PropertyItem[];
+    delivery_term: string;
+    refund: boolean;
+    refund_policy: string;
+    shop_owner_id: string
+    primary_image: string
+    images: ProductImage[]
 }
 
 interface ShopDataProps {
@@ -120,6 +138,13 @@ const ProductDetailByShop: React.FC = () => {
         return `${baseUrl}${imagePath}`;
     }
 
+    // Helper function to check if media is a video
+    const isVideo = (mediaPath: string | null | undefined): boolean => {
+        if (!mediaPath) return false;
+        const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov'];
+        return videoExtensions.some(ext => mediaPath.toLowerCase().endsWith(ext));
+    }
+
     const [otherProducts, setOtherProducts] = useState<OtherProduct[]>([])
     const [products, setProducts] = useState<Product[]>([])
     const [selectedImageId, setSelectedImageId] = useState<string>("")
@@ -137,7 +162,6 @@ const ProductDetailByShop: React.FC = () => {
     const dispatch = useDispatch()
     const { user, userInfo } = useSelector((state: any) => state.auth)
     const accessToken = useAccessToken(user)
-    const [orders, setOrders] = useState<OrderProp>([])
     
     useEffect(() => {
         if (!user || !user.access) {
@@ -164,7 +188,7 @@ const ProductDetailByShop: React.FC = () => {
             const res = await axios.get(url)
             const data = res.data
             const filter = data.filter((p: Product) => p.id === productId)
-            // console.log("product detail data: ", filter)
+            console.log("product detail data: ", filter)
             setProducts(filter)
             const otherProducts = data.filter((o: Product) => o.id !== productId)
             setOtherProducts(otherProducts)
@@ -338,63 +362,30 @@ const ProductDetailByShop: React.FC = () => {
     
                 <Box>
                     {products.length > 0 ? (
-                        products.map((p: Product) => {
-                            // Sort images by order
-                            const sortedImages = [...p.images].sort((a, b) => a.order - b.order)
-                            const selectedImage = sortedImages.find(img => img.id === selectedImageId)
+                        products
+                        .map((p: Product) => {
+                            // Sort images: videos first, then by is_primary, then by order
+                            const sortedImages = [...p.images].sort((a, b) => {
+                                const isVideoA = isVideo(a.media)
+                                const isVideoB = isVideo(b.media)
+                                
+                                // Videos come first
+                                if (isVideoA && !isVideoB) return -1
+                                if (!isVideoA && isVideoB) return 1
+                                
+                                // If both same type, sort by is_primary then order
+                                if (a.is_primary && !b.is_primary) return -1
+                                if (!a.is_primary && b.is_primary) return 1
+                                return a.order - b.order
+                            })
         
                             return (
                                 <Wrap key={p.id} justify={{md: "space-between", base: "center"}} maxW={"100%"}>
-                                    {/* Left Side - Images */}
-                                    {/* <HStack flexBasis={{base:"100%", md: "49%"}} p={"10px"} rounded={'7px'} h={{md: "520px", base:"420px"}}
-                                        shadow={"2px 2px 25px 2px rgb(75, 75, 79)"}>
-                                            {sortedImages.length > 1 && (
-                                                <VStack h={"inherit"} py={"10px"} 
-                                                    justifyContent={"space-between"} overflow="auto">
-                                                    {sortedImages.map((image: ProductImage) => (
-                                                        <Box justifyContent={"space-between"}
-                                                            key={image.id}
-                                                            onClick={() => handleImageClick(image.id)}
-                                                            cursor="pointer"
-                                                            border={"1px solid"}
-                                                            rounded={"5px"}
-                                                            transition="all 0.2s"
-                                                            _hover={{ borderColor: "blue.400", transform: "scale(1.05)" }}
-                                                        >
-                                                            <Image 
-                                                                src={image.image} 
-                                                                w="80px" 
-                                                                h="100px" 
-                                                                fit={"fill"}
-                                                            />
-                                                        </Box>
-                                                    ))}
-                                                </VStack>
-                                            )}
-                                            {selectedImage && (
-                                                <Box 
-                                                    borderWidth="1px" 
-                                                    borderRadius="lg" 
-                                                    overflow="hidden"
-                                                    py={"10px"}
-                                                    // w={"80%"}
-                                                    h={"inherit"}
-                                                >
-                                                    <Image 
-                                                        src={selectedImage.image} 
-                                                        w={{md:"400px", base:"300px"}}
-                                                        h={{md:"500px", base: "400px"}}
-                                                        fit="fill"
-                                                    />
-                                                </Box>
-                                            )}
-                                        
-                                    </HStack> */}
                                     <Box flexBasis={{base:"100%", md: "45%"}} maxH={{md: "520px", base:"720px"}}>
-                                        {p.images && p.images.length > 0 ? (
+                                        {sortedImages && sortedImages.length > 0 ? (
                                             (() => {
-                                                const currentImage = getCurrentImageOtherProduct(p.id, p.images)
-                                                const hasMultipleImages = p.images.length > 1
+                                                const currentImage = getCurrentImageOtherProduct(p.id, sortedImages)
+                                                const hasMultipleImages = sortedImages.length > 1
                                                 const currentIndex = currentImageIndex[p.id] || 0
                     
                                                 return (
@@ -410,13 +401,26 @@ const ProductDetailByShop: React.FC = () => {
                                                         <Box position="relative" w={{base:"100%", md: "100%"}} h={{md: "100%", base:"400px"}}>
                                                         
                                                             {currentImage ? (
-                                                                <Image 
-                                                                    w="100%" 
-                                                                    h="100%" 
-                                                                    src={getImageUrl(currentImage.media)} 
-                                                                    alt={p.name}
-                                                                    fit={"fill"}
-                                                                />
+                                                                isVideo(currentImage.media) ? (
+                                                                    <video
+                                                                        style={{
+                                                                            width: '100%',
+                                                                            height: '100%',
+                                                                            objectFit: 'cover'
+                                                                        }}
+                                                                        src={getImageUrl(currentImage.media) || ''}
+                                                                        controls
+                                                                        playsInline
+                                                                    />
+                                                                ) : (
+                                                                    <Image 
+                                                                        w="100%" 
+                                                                        h="100%" 
+                                                                        src={getImageUrl(currentImage.media)} 
+                                                                        alt={p.name}
+                                                                        fit={"fill"}
+                                                                    />
+                                                                )
                                                             ) : (
                                                                 <Center h="100%">
                                                                     <Text color="gray.500">No Image</Text>
@@ -432,7 +436,7 @@ const ProductDetailByShop: React.FC = () => {
                                                                         left={2}
                                                                         top="50%"
                                                                         transform="translateY(-50%)"
-                                                                        onClick={(e) => handlePrevImage(e, p.id, p.images)}
+                                                                        onClick={(e) => handlePrevImage(e, p.id, sortedImages)}
                                                                         size="sm"
                                                                         colorPalette="blackAlpha"
                                                                         variant="solid"
@@ -449,7 +453,7 @@ const ProductDetailByShop: React.FC = () => {
                                                                         right={2}
                                                                         top="50%"
                                                                         transform="translateY(-50%)"
-                                                                        onClick={(e) => handleNextImage(e, p.id, p.images)}
+                                                                        onClick={(e) => handleNextImage(e, p.id, sortedImages)}
                                                                         size="sm"
                                                                         colorPalette="blackAlpha"
                                                                         variant="solid"
@@ -475,7 +479,7 @@ const ProductDetailByShop: React.FC = () => {
                                                                     borderRadius="md"
                                                                     fontSize="sm"
                                                                 >
-                                                                    {currentIndex + 1} / {p.images.length}
+                                                                    {currentIndex + 1} / {sortedImages.length}
                                                                 </Box>
                                                             )}
                     
@@ -535,13 +539,26 @@ const ProductDetailByShop: React.FC = () => {
                                                 h={"100%"}
                                             >
                                                 <Box position="relative" w={{base:"100%", md: "100%"}} h={{md: "100%", base:"400px"}}>
-                                                    <Image 
-                                                        w="100%" 
-                                                        h="100%" 
-                                                        src={getImageUrl(p.primary_image)}
-                                                        alt={p.name}
-                                                        fit={"fill"}
-                                                    />
+                                                    {isVideo(p.primary_image) ? (
+                                                        <video
+                                                            style={{
+                                                                width: '100%',
+                                                                height: '100%',
+                                                                objectFit: 'cover'
+                                                            }}
+                                                            src={getImageUrl(p.primary_image) || ''}
+                                                            controls
+                                                            playsInline
+                                                        />
+                                                    ) : (
+                                                        <Image 
+                                                            w="100%" 
+                                                            h="100%" 
+                                                            src={getImageUrl(p.primary_image)}
+                                                            alt={p.name}
+                                                            fit={"fill"}
+                                                        />
+                                                    )}
                                                 </Box>
                                             </Box>
                                         ) : (
@@ -696,14 +713,47 @@ const ProductDetailByShop: React.FC = () => {
                                                         Warranty: <Strong px={"10px"}>{p.warranty}</Strong>
                                                     </List.Item>
                                                 }
+                                                <List.Item>
+                                                    <List.Indicator asChild color="green.500"><LuCircleCheck /></List.Indicator>
+                                                    Delivery: <Text px={"10px"}>{p.delivery_term}</Text>
+                                                </List.Item>
+
+                                                {p.refund === true && 
+                                                    <List.Item>
+                                                        <List.Indicator asChild color="green.500"><LuCircleCheck /></List.Indicator>
+                                                        Refund policy: <Strong px={"10px"}>{p.refund_policy}</Strong>
+                                                    </List.Item>
+                                                }
+                                                <List.Item>
+                                                    <List.Indicator asChild color="green.500"><LuCircleCheck /></List.Indicator>
+                                                    Category:
+                                                    <Text px={"10px"}>
+                                                        {Array.isArray(p.category_names) ? p.category_names.join(', ') : p.category_names}
+                                                    </Text>
+                                                </List.Item>
+                                                <List.Item>
+                                                    <List.Indicator asChild color="green.500"><LuCircleCheck /></List.Indicator>
+                                                    <Text>Properties:</Text>
+                                                    <Box px={"10px"} ml={"20px"}>
+                                                        {Array.isArray(p.properties) && p.properties.length > 0
+                                                            ? p.properties.map(prop => (
+                                                                <Box key={prop.property_name}>
+                                                                    <List.Root>
+                                                                        <List.Item>{prop.property_name}: {prop.value}</List.Item>
+                                                                    </List.Root>
+                                                                </Box>
+                                                            ))
+                                                            : 'No properties'}
+                                                    </Box>
+                                                </List.Item>
                                             </List.Root>
                                         </Box>
-                                        <Text onClick={MoreDetail} cursor={"pointer"} fontStyle={"italic"} fontWeight={"bold"}>more details ...</Text>
+                                        <Text onClick={MoreDetail} cursor={"pointer"} fontStyle={"italic"}>more details ...</Text>
                                     </Stack>
                                     {isMore && (
                                         <Box p={"20px"} shadow={"2px 2px 25px 2px rgb(75, 75, 79) "} rounded={"7px"} w={"100%"}>
                                             <Text textAlign={"justify"} w={'100%'}>{p.description}</Text>
-                                            <Text onClick={LessDetail} cursor={"pointer"} fontWeight={"bold"}>less details</Text>    
+                                            <Text onClick={LessDetail} cursor={"pointer"}>less details</Text>    
                                         </Box>
                                     )}
                                 </Wrap>

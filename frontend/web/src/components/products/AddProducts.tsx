@@ -8,7 +8,7 @@ import api from '../../services/api'
 import { getUserInfo } from '../../services/authSlice'
 import { VStack, HStack, Box, Input, Textarea, Button, Stack, Image, Text, Heading, Grid, IconButton, Badge} from '@chakra-ui/react'
 import { Field } from '@chakra-ui/react/field'
-import { toaster } from '../ui/toaster'
+import { Toaster, toaster } from '../ui/toaster'
 import useShopAdmin from '../shop/ShopHookAdmin'
 import { X, Star } from 'lucide-react'
 
@@ -23,14 +23,6 @@ interface Category {
     id: string
     name: string
     description: string
-}
-
-interface Property {
-    id: string
-    name: string
-    values: string[]  // Array of possible values for this property
-    description: string
-    created_at: string
 }
 
 interface SelectedProperty {
@@ -68,11 +60,14 @@ const AddProducts: React.FC = () => {
     const { accessToken } = useAccessToken(user)
     const [isLoading, setLoading] = useState<boolean>(false)
     
-    // Categories and Properties state
+    // Categories state
     const [categories, setCategories] = useState<Category[]>([])
-    const [properties, setProperties] = useState<Property[]>([])
     const [loadingCategories, setLoadingCategories] = useState<boolean>(false)
-    const [loadingProperties, setLoadingProperties] = useState<boolean>(false)
+    const [showPropertyForm, setShowPropertyForm] = useState<boolean>(false)
+    const [newProperty, setNewProperty] = useState<{name: string, value: string}>({
+        name: '',
+        value: ''
+    })
 
     useEffect(() => {
         if (user && (!userInfo || Object.keys(userInfo).length === 0)) {
@@ -81,7 +76,7 @@ const AddProducts: React.FC = () => {
     }, [dispatch, user, userInfo])
     console.log("userInfo: ", userInfo)
 
-    // Fetch categories and properties on component mount
+    // Fetch categories on component mount
     useEffect(() => {
         const fetchCategories = async () => {
             try {
@@ -101,26 +96,7 @@ const AddProducts: React.FC = () => {
             }
         }
 
-        const fetchProperties = async () => {
-            try {
-                setLoadingProperties(true)
-                const response = await api.get(`${import.meta.env.VITE_API_BASE_URL}/shops/properties-list/`)
-                setProperties(response.data || [])
-            } catch (error: any) {
-                console.error("Failed to fetch properties:", error)
-                toaster.create({
-                    title: 'Error',
-                    description: 'Failed to load properties',
-                    type: 'error',
-                    duration: 3000,
-                })
-            } finally {
-                setLoadingProperties(false)
-            }
-        }
-
         fetchCategories()
-        fetchProperties()
     }, [])
 
     // Form data
@@ -241,35 +217,7 @@ const AddProducts: React.FC = () => {
         })
     }
 
-    // Handle property selection (supports multiple)
-    const handlePropertyChange = (propertyId: string) => {
-        const property = properties.find(p => p.id === propertyId)
-        if (!property) return
-
-        setFormData(prev => {
-            const existingProperty = prev.properties.find(p => p.property_id === propertyId)
-            
-            if (existingProperty) {
-                // Remove if already selected
-                return {
-                    ...prev,
-                    properties: prev.properties.filter(p => p.property_id !== propertyId)
-                }
-            } else {
-                // Add with empty value for user to fill in
-                return {
-                    ...prev,
-                    properties: [...prev.properties, {
-                        property_id: propertyId,
-                        property_name: property.name,
-                        value: ''  // Empty string for user input
-                    }]
-                }
-            }
-        })
-    }
-
-    // Handle property value selection/deselection
+    // Handle property value changes
     const handlePropertyValueChange = (propertyId: string, value: string) => {
         setFormData(prev => ({
             ...prev,
@@ -278,6 +226,50 @@ const AddProducts: React.FC = () => {
                     ? { ...p, value }
                     : p
             )
+        }))
+    }
+    
+    // Add a property directly to the product
+    const handleAddProperty = () => {
+        if (!newProperty.name.trim()) {
+            toaster.create({
+                title: 'Validation Error',
+                description: 'Property name is required',
+                type: 'error',
+                duration: 3000,
+            })
+            return
+        }
+        
+        // Generate a unique ID for this property
+        const propertyId = `prop_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        
+        setFormData(prev => ({
+            ...prev,
+            properties: [...prev.properties, {
+                property_id: propertyId,
+                property_name: newProperty.name.trim(),
+                value: newProperty.value.trim()
+            }]
+        }))
+        
+        // Reset form and hide it
+        setNewProperty({ name: '', value: '' })
+        setShowPropertyForm(false)
+        
+        toaster.create({
+            title: 'Success',
+            description: 'Property added',
+            type: 'success',
+            duration: 2000,
+        })
+    }
+
+    // Remove a property
+    const handleRemoveProperty = (propertyId: string) => {
+        setFormData(prev => ({
+            ...prev,
+            properties: prev.properties.filter(p => p.property_id !== propertyId)
         }))
     }
 
@@ -466,10 +458,10 @@ const AddProducts: React.FC = () => {
                 : []
 
             // Prepare properties_input with custom values
-            const propertiesInput = formData.properties
+            const propertiesArray = formData.properties
                 .filter(p => p.value.trim().length > 0)  // Only include properties with values
                 .map(p => ({
-                    property_id: p.property_id,
+                    name: p.property_name,
                     value: p.value
                 }))
 
@@ -484,7 +476,7 @@ const AddProducts: React.FC = () => {
                 condition: formData.condition || "",
                 warranty: formData.warranty || "",
                 category: categoryArray,
-                properties_input: propertiesInput,
+                properties: propertiesArray,
                 delivery_term: formData.delivery_term || "",
                 refund_policy: formData.refund_policy || "",
                 refund: formData.refund || false,
@@ -588,7 +580,7 @@ const AddProducts: React.FC = () => {
         <Box maxW="100%" py={8}>
             <Box p={8} rounded={"5px"} shadow="md">
                 <Heading size="lg" mb={6}>Add New Product</Heading>
-
+                <Toaster/>
                 <form onSubmit={handleAddProduct}>
                     <Stack gap={5}>
                         {/* Product Name */}
@@ -713,7 +705,7 @@ const AddProducts: React.FC = () => {
                             <Field.Label>Warranty</Field.Label>
                             <Input
                                 name="warranty"
-                                value={formData.warranty || "2 years"}
+                                value={formData.warranty}
                                 onChange={handleChange}
                                 placeholder="Enter warranty"
                                 size="lg"
@@ -781,76 +773,102 @@ const AddProducts: React.FC = () => {
 
                         {/* Properties - Multi-select with Values */}
                         <Field.Root>
-                            <Field.Label htmlFor="properties">Product Properties</Field.Label>
-                            {loadingProperties ? (
-                                <Text>Loading properties...</Text>
-                            ) : (
-                                <Box>
-                                    <select
-                                        id='properties'
-                                        name='properties'
-                                        value=""
-                                        onChange={(e) => {
-                                            if (e.target.value) {
-                                                handlePropertyChange(e.target.value)
-                                                e.target.value = "" // Reset select
-                                            }
-                                        }}
-                                        style={{border:"1px solid", borderRadius:"5px", padding:"10px", width:"100%"}}
-                                    >
-                                        <option value="">Add a property...</option>
-                                        {properties.map((prop) => (
-                                            <option key={prop.id} value={prop.id}>
-                                                {prop.name} {prop.values && prop.values.length > 0 ? `(${prop.values.length} options)` : ''}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    
-                                    {/* Selected Properties with Value Checkboxes */}
-                                    {formData.properties.length > 0 && (
-                                        <VStack mt={4} gap={4} align="stretch">
-                                            {formData.properties.map((selectedProp) => {
-                                                const property = properties.find(p => p.id === selectedProp.property_id)
-                                                return (
-                                                    <Box
-                                                        key={selectedProp.property_id}
-                                                        borderWidth="1px"
-                                                        borderRadius="md"
-                                                        p={4}
-                                                        bg="gray.50"
+                            <HStack justify="space-between" align="center" mb={2}>
+                                <Field.Label htmlFor="properties">Product Properties</Field.Label>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    colorPalette="blue"
+                                    onClick={() => setShowPropertyForm(!showPropertyForm)}
+                                >
+                                    {showPropertyForm ? 'Cancel' : '+ Add Property'}
+                                </Button>
+                            </HStack>
+                            
+                            {/* Create Property Form */}
+                            {showPropertyForm && (
+                                <Box
+                                    p={4}
+                                    borderWidth="1px"
+                                    borderRadius="md"
+                                    bg="blue.50"
+                                    mb={4}
+                                >
+                                    <Heading size="sm" mb={3}>Add New Property</Heading>
+                                    <VStack gap={3} align="stretch">
+                                        <Field.Root>
+                                            <Field.Label>Property Name *</Field.Label>
+                                            <Input
+                                                value={newProperty.name}
+                                                onChange={(e) => setNewProperty(prev => ({...prev, name: e.target.value}))}
+                                                placeholder="e.g., Color, Size, Material"
+                                                size="sm"
+                                            />
+                                        </Field.Root>
+                                        
+                                        <Field.Root>
+                                            <Field.Label>Value *</Field.Label>
+                                            <Input
+                                                value={newProperty.value}
+                                                onChange={(e) => setNewProperty(prev => ({...prev, value: e.target.value}))}
+                                                placeholder="e.g., Red, XL, Cotton"
+                                                size="sm"
+                                            />
+                                        </Field.Root>
+                                        
+                                        <Button
+                                            size="sm"
+                                            colorPalette="blue"
+                                            onClick={handleAddProperty}
+                                        >
+                                            Add Property
+                                        </Button>
+                                    </VStack>
+                                </Box>
+                            )}
+                            
+                            {/* Display Properties */}
+                            {formData.properties.length > 0 && (
+                                <Box mt={4}>
+                                    <Text fontSize="sm" fontWeight="semibold" mb={2}>
+                                        Properties ({formData.properties.length})
+                                    </Text>
+                                    <VStack gap={3} align="stretch">
+                                        {formData.properties.map((selectedProp) => (
+                                            <Box
+                                                key={selectedProp.property_id}
+                                                borderWidth="1px"
+                                                borderRadius="md"
+                                                p={4}
+                                                bg="gray.50"
+                                            >
+                                                <HStack justify="space-between" mb={3}>
+                                                    <Text fontWeight="medium" fontSize="sm">
+                                                        {selectedProp.property_name}: {selectedProp.value}
+                                                    </Text>
+                                                    <IconButton
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        colorPalette="red"
+                                                        onClick={() => handleRemoveProperty(selectedProp.property_id)}
+                                                        aria-label="Remove property"
                                                     >
-                                                        <HStack justify="space-between" mb={3}>
-                                                            <Heading size="sm">{selectedProp.property_name}</Heading>
-                                                            <IconButton
-                                                                size="sm"
-                                                                variant="ghost"
-                                                                colorPalette="red"
-                                                                onClick={() => handlePropertyChange(selectedProp.property_id)}
-                                                                aria-label="Remove property"
-                                                            >
-                                                                <X size={16} />
-                                                            </IconButton>
-                                                        </HStack>
-                                                        
-                                                        <Field.Root>
-                                                            <Field.Label fontSize="sm">Enter custom value</Field.Label>
-                                                            <Input
-                                                                value={selectedProp.value}
-                                                                onChange={(e) => handlePropertyValueChange(selectedProp.property_id, e.target.value)}
-                                                                placeholder={`Enter ${selectedProp.property_name.toLowerCase()} value (e.g., ${property?.values?.[0] || 'custom value'})`}
-                                                                size="sm"
-                                                            />
-                                                            {property && property.values && property.values.length > 0 && (
-                                                                <Field.HelperText fontSize="xs">
-                                                                    Suggestions: {property.values.join(', ')}
-                                                                </Field.HelperText>
-                                                            )}
-                                                        </Field.Root>
-                                                    </Box>
-                                                )
-                                            })}
-                                        </VStack>
-                                    )}
+                                                        <X size={16} />
+                                                    </IconButton>
+                                                </HStack>
+                                                
+                                                <Field.Root>
+                                                    <Field.Label fontSize="sm">Value</Field.Label>
+                                                    <Input
+                                                        value={selectedProp.value}
+                                                        onChange={(e) => handlePropertyValueChange(selectedProp.property_id, e.target.value)}
+                                                        placeholder={`Enter ${selectedProp.property_name?.toLowerCase() || 'property'} value`}
+                                                        size="sm"
+                                                    />
+                                                </Field.Root>
+                                            </Box>
+                                        ))}
+                                    </VStack>
                                 </Box>
                             )}
                             <Field.HelperText>

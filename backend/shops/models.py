@@ -25,8 +25,6 @@ def default_category_id():
     return custom_id(prefix="cat").lower()
 def default_property_id():
     return custom_id(prefix="pro").lower()
-def default_property_value_id():
-    return custom_id(prefix="ppv").lower()
 
 class ProductCategory(models.Model):
     id = models.CharField(
@@ -66,27 +64,6 @@ class ProductProperty(models.Model):
 
     def __str__(self):
         return self.name
-
-class ProductPropertyValue(models.Model):
-    """Through model to store custom property values for each product"""
-    id = models.CharField(
-        primary_key=True,
-        max_length=255,
-        default=default_property_value_id,
-        editable=False,
-        unique=True,
-    )
-    product = models.ForeignKey('Product', on_delete=models.CASCADE, related_name='property_values')
-    property = models.ForeignKey(ProductProperty, on_delete=models.CASCADE, related_name='product_values')
-    value = models.CharField(max_length=500)  # Custom value entered by user
-    created_at = models.DateTimeField(auto_now_add=True)
-    
-    class Meta:
-        unique_together = [['product', 'property']]
-        ordering = ['property__name']
-    
-    def __str__(self):
-        return f"{self.product.name} - {self.property.name}: {self.value}"
 
 class Shop(models.Model):
     id = models.CharField(
@@ -149,7 +126,7 @@ class Product(models.Model):
     currency_unit = models.CharField(max_length=5, default="EUR")
     condition = models.CharField(max_length=20, blank=True, null=True)
     category = models.ManyToManyField(ProductCategory, related_name='products')
-    properties = models.ManyToManyField(ProductProperty, through='ProductPropertyValue', related_name='products')
+    properties = ArrayField(models.JSONField(), blank=True, default=list)
     warranty = models.CharField(max_length=50, blank=True, null=True)
     delivery_term = models.TextField(blank=True, null=True)
     refund = models.BooleanField(default=False)

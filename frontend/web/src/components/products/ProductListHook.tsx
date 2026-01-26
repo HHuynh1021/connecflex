@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react"
 import { Box, Text, Center, Spinner} from "@chakra-ui/react"
-import api from "../../services/api"
 import axios from "axios"
+import { apiPublic } from "@/services/api"
+
+interface ProductCategory {
+    id: string
+    name: string
+}
 
 interface ProductImage {
     id: string
@@ -23,57 +28,53 @@ interface Product {
     condition: string;
     warranty: string;
     category: string[]; // Array of category IDs
-    properties: string[]; // Array of property IDs
+    properties: Array<{property_name: string, value: string}>; // Array of property objects with values
     shop_owner_id: string
     primary_image: string
+    delivery_term: string;
+    refund_policy: string;
+    refund: boolean;
 }
 const useProductList = () => {
     const [products, setProducts] = useState<Product[]>([])
-    const [isLoading, setIsLoading] = useState<boolean>(false)
+    const [categories, setCategories] = useState<ProductCategory[]>([])
+
+    const [isLoading, setIsLoading] = useState<boolean>(true)
     const [error, setError] = useState<string>("")
 
-    const fetchProductList = async () => {
-        setIsLoading(true)
-        setError("")
-
-        try {
-            const url = `${import.meta.env.VITE_API_BASE_URL}/shops/product-list-view/`
-            const res = await axios.get(url)
-            
-            // Handle response structure
-            const data = Array.isArray(res.data) ? res.data : (Array.isArray(res.data[0]) ? res.data[0] : [res.data])
-            
-            // console.log("Filtered products:", data)
-            setProducts(data)
-        } catch (err: any) {
-            console.error("Failed to fetch products:", err)
-            setError(err.response?.data?.message || "Failed to load products")
-        } finally {
-            setIsLoading(false)
-        }
-    }
     useEffect(() => {
-        fetchProductList()
+        const fetchAllData = async () => {
+            setIsLoading(true)
+            setError("")
+
+            try {
+                // Fetch products and categories in parallel
+                const [productsRes, categoriesRes] = await Promise.all([
+                    apiPublic.get(`${import.meta.env.VITE_API_BASE_URL}/shops/product-list-view/`),
+                    apiPublic.get(`${import.meta.env.VITE_API_BASE_URL}/shops/category-list/`)
+                ])
+
+                // Process products
+                const productsData = Array.isArray(productsRes.data) ? productsRes.data : (Array.isArray(productsRes.data[0]) ? productsRes.data[0] : [productsRes.data])
+                console.log("Fetched products:", productsData)
+                setProducts(productsData)
+
+                // Process categories
+                const categoriesData = Array.isArray(categoriesRes.data) ? categoriesRes.data : []
+                console.log("Fetched categories:", categoriesData)
+                setCategories(categoriesData)
+
+            } catch (err: any) {
+                console.error("Failed to fetch data:", err)
+                setError(err.response?.data?.message || "Failed to load data")
+            } finally {
+                setIsLoading(false)
+            }
+        }
+
+        fetchAllData()
     }, [])
 
-    if (isLoading) {
-        return (
-            <Center h="400px">
-                <Spinner size="xl" />
-            </Center>
-        )
-    }
-    if (products.length === 0) {
-        return (
-            <Center h="400px">
-                <Box textAlign="center">
-                    <Text fontSize="lg" color="gray.600" mb={2}>
-                        No Product
-                    </Text>
-                </Box>
-            </Center>
-        )
-    }
-    return {products, isLoading, error}
+    return {products, categories, isLoading, error}
 }
 export default useProductList

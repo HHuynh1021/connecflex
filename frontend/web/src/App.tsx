@@ -49,7 +49,7 @@ function App() {
           <Route path="/management/shop-product/add-product" element={<AddProducts/>}/>
           <Route path="/management/shop-product" element={<ProductPage/>}/>
           <Route path="/management/products/add-new-products" element={<AddProducts/>}/>
-          <Route path="/management/products/update/:productId" element={<ProductUpdate/>}/>
+          <Route path="/management/products/update/:shopId/:productId" element={<ProductUpdate/>}/>
           <Route path="/management/order-list" element={<OrderList/>}/>
         </Route>
       </Routes>
